@@ -1,0 +1,19 @@
+{% extends "clinic/base.html" %}
+{% block content %}
+<h2>Patients</h2>
+<a href="{% url 'patient_create' %}">Add Patient</a>
+<table border="1">
+    <tr>
+        <th>Chart #</th><th>Name</th><th>DOB</th><th>Phone</th><th>Actions</th>
+    </tr>
+    {% for p in patients %}
+    <tr>
+        <td>{{ p.chart_number }}</td>
+        <td>{{ p.last_name }}, {{ p.first_name }}</td>
+        <td>{{ p.date_of_birth }}</td>
+        <td>{{ p.phone }}</td>
+        <td><a href="{% url 'patient_edit' p.id %}">Edit</a></td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}

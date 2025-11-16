@@ -1,0 +1,22 @@
+{% extends "clinic/base.html" %}
+{% block content %}
+
+    <h2>{{ title }}</h2>
+
+    <form method="post">
+        {% csrf_token %}
+        
+        {# Display non-field errors (where conflict errors appear) #}
+        {% if form.non_field_errors %}
+            <div style="color: red; border: 1px solid red; padding: 10px;">
+                <strong>Error:</strong> {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+
+        {{ form.as_p }}
+
+        <button type="submit">Save Appointment</button>
+        <a href="{% url 'appointment_list' %}">Cancel</a>
+    </form>
+
+{% endblock %}

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hospital MVP</title>
+</head>
+<body>
+    <h1>Hospital Management System - MVP</h1>
+    <nav>
+        <a href="{% url 'patient_list' %}">Patients</a> |
+        <a href="{% url 'patient_search' %}">Search Patients</a> |
+        <a href="{% url 'appointment_list' %}">Appointments</a> |
+        <a href="{% url 'appointment_create' %}">New Appointment</a> |
+        <a href="{% url 'provider_calendar' %}">Provider Calendar</a> |
+        <a href="{% url 'admin:index' %}">Admin Panel</a>
+    </nav>
+    <hr>
+    {% if messages %}
+        <ul>
+            {% for message in messages %}
+                <li>{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+    {% block content %}{% endblock %}
+</body>
+</html>

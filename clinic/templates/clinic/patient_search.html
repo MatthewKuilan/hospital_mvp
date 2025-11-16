@@ -1,0 +1,35 @@
+{% extends "clinic/base.html" %}
+{% block content %}
+
+    <h2>Patient Search</h2>
+
+    <form method="get" action="{% url 'patient_search' %}">
+        {# The form includes fields for name, DOB, and phone #}
+        {{ form.as_p }}
+        <button type="submit">Search</button>
+        <a href="{% url 'patient_search' %}">Clear Search</a>
+    </form>
+
+    <hr>
+    
+    {% if results %}
+        <h3>Search Results ({{ results|length }} Found)</h3>
+        <table border="1">
+            <tr>
+                <th>Chart #</th><th>Name</th><th>DOB</th><th>Phone</th><th>Actions</th>
+            </tr>
+            {% for p in results %}
+            <tr>
+                <td>{{ p.chart_number }}</td>
+                <td><a href="{% url 'patient_edit' p.id %}">{{ p.last_name }}, {{ p.first_name }}</a></td>
+                <td>{{ p.date_of_birth|date:"M. j, Y" }}</td>
+                <td>{{ p.phone }}</td>
+                <td><a href="{% url 'patient_edit' p.id %}">Edit</a></td>
+            </tr>
+            {% endfor %}
+        </table>
+    {% elif form.is_bound and not results %}
+        <p>No patients matched your search criteria.</p>
+    {% endif %}
+
+{% endblock %}

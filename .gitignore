@@ -1,0 +1,18 @@
+# Python environment and cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*~
+
+# Virtual Environment
+venv/
+.venv/
+env/
+
+# Django specific
+db.sqlite3
+/media
+/static
+.DS_Store
+.vscode/ # If you use VS Code

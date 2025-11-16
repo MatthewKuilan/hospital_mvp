@@ -1,0 +1,21 @@
+{% extends "clinic/base.html" %}
+{% block content %}
+
+    <h2>Confirm Appointment Cancellation</h2>
+    
+    <p>Are you sure you want to cancel the following appointment?</p>
+
+    <ul>
+        <li><strong>Patient:</strong> {{ appointment.patient.last_name }}, {{ appointment.patient.first_name }}</li>
+        <li><strong>Provider:</strong> {{ appointment.provider.name }}</li>
+        <li><strong>Time:</strong> {{ appointment.start_time|date:"M. j, Y H:i" }}</li>
+        <li><strong>Reason:</strong> {{ appointment.reason }}</li>
+    </ul>
+
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" style="background-color: red; color: white;">Yes, Cancel Appointment</button>
+        <a href="{% url 'appointment_list' %}">No, Keep Appointment</a>
+    </form>
+
+{% endblock %}

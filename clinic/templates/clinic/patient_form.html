@@ -1,0 +1,16 @@
+{% extends "clinic/base.html" %}
+{% block content %}
+
+    <h2>{{ title }}</h2> 
+    
+    <form method="post">
+        {% csrf_token %}
+        
+        {# Display form fields with labels and input boxes #}
+        {{ form.as_p }}
+        
+        <button type="submit">Save Patient</button>
+        <a href="{% url 'patient_list' %}">Cancel</a>
+    </form>
+
+{% endblock %}
