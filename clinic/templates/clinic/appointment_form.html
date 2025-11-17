@@ -1,22 +1,32 @@
 {% extends "clinic/base.html" %}
+
+{% block title %}{{ title }} - Hospital MVP{% endblock %}
+
 {% block content %}
+<div class="page-header">
+    <h2 class="page-title">{{ title }}</h2>
+</div>
 
-    <h2>{{ title }}</h2>
+<div class="row">
+    <div class="col-md-8 col-lg-6">
+        <form method="post">
+            {% csrf_token %}
 
-    <form method="post">
-        {% csrf_token %}
-        
-        {# Display non-field errors (where conflict errors appear) #}
-        {% if form.non_field_errors %}
-            <div style="color: red; border: 1px solid red; padding: 10px;">
-                <strong>Error:</strong> {{ form.non_field_errors }}
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger" role="alert">
+                    <strong>Error:</strong> {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+
+            {{ form.as_p }}
+
+            <div class="btn-group-custom">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-circle me-1"></i> Save Appointment
+                </button>
+                <a href="{% url 'appointment_list' %}" class="btn btn-outline-secondary">Cancel</a>
             </div>
-        {% endif %}
-
-        {{ form.as_p }}
-
-        <button type="submit">Save Appointment</button>
-        <a href="{% url 'appointment_list' %}">Cancel</a>
-    </form>
-
+        </form>
+    </div>
+</div>
 {% endblock %}

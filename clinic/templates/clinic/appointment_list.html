@@ -1,39 +1,57 @@
 {% extends "clinic/base.html" %}
+
+{% block title %}Appointments - Hospital MVP{% endblock %}
+
 {% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+    <h2 class="page-title mb-0">Appointments</h2>
+    <a href="{% url 'appointment_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-1"></i> New Appointment
+    </a>
+</div>
 
-    <h2>Appointments</h2>
-    <a href="{% url 'appointment_create' %}">New Appointment</a>
-
-    <table border="1">
-        <tr>
-            <th>Patient</th>
-            <th>Provider</th>
-            <th>Start Time</th>
-            <th>End Time</th>
-            <th>Reason</th>
-            <th>Status</th>
-            <th>Actions</th>
-        </tr>
-        {% for a in appointments %}
-        <tr>
-            <td>{{ a.patient.last_name }}, {{ a.patient.first_name }}</td>
-            <td>{{ a.provider.name }}</td>
-            <td>{{ a.start_time|date:"M. j, Y h:i A" }}</td>
-            <td>{{ a.end_time|date:"h:i A" }}</td>
-            <td>{{ a.reason }}</td>
-            <td>
-                {% if a.status == 'scheduled' %}
-                    <span style="color: green;">{{ a.status|capfirst }}</span>
-                {% else %}
-                    <span style="color: red;">{{ a.status|capfirst }}</span>
-                {% endif %}
-            </td>
-            <td>
-                <a href="{% url 'appointment_edit' a.id %}">Edit</a> |
-                <a href="{% url 'appointment_cancel' a.id %}">Cancel</a>
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
-
+{% if appointments %}
+    <div class="table-wrapper">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Patient</th>
+                    <th>Provider</th>
+                    <th>Start Time</th>
+                    <th>End Time</th>
+                    <th>Reason</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in appointments %}
+                <tr>
+                    <td>{{ a.patient.last_name }}, {{ a.patient.first_name }}</td>
+                    <td>{{ a.provider.name }}</td>
+                    <td>{{ a.start_time|date:"M. j, Y h:i A" }}</td>
+                    <td>{{ a.end_time|date:"h:i A" }}</td>
+                    <td>{{ a.reason }}</td>
+                    <td>
+                        {% if a.status == 'scheduled' %}
+                            <span class="badge bg-success">{{ a.status|capfirst }}</span>
+                        {% else %}
+                            <span class="badge bg-danger">{{ a.status|capfirst }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="table-actions">
+                        <a href="{% url 'appointment_edit' a.id %}">Edit</a>
+                        <a href="{% url 'appointment_cancel' a.id %}">Cancel</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <div class="empty-state">
+        <p>No appointments scheduled.</p>
+        <a href="{% url 'appointment_create' %}" class="btn btn-primary">Schedule Your First Appointment</a>
+    </div>
+{% endif %}
 {% endblock %}

@@ -1,21 +1,37 @@
 {% extends "clinic/base.html" %}
+
+{% block title %}Cancel Appointment - Hospital MVP{% endblock %}
+
 {% block content %}
+<div class="page-header">
+    <h2 class="page-title">Confirm Appointment Cancellation</h2>
+</div>
 
-    <h2>Confirm Appointment Cancellation</h2>
-    
-    <p>Are you sure you want to cancel the following appointment?</p>
+<div class="row">
+    <div class="col-md-8 col-lg-6">
+        <div class="alert alert-warning mb-4">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            Are you sure you want to cancel this appointment?
+        </div>
 
-    <ul>
-        <li><strong>Patient:</strong> {{ appointment.patient.last_name }}, {{ appointment.patient.first_name }}</li>
-        <li><strong>Provider:</strong> {{ appointment.provider.name }}</li>
-        <li><strong>Time:</strong> {{ appointment.start_time|date:"M. j, Y H:i" }}</li>
-        <li><strong>Reason:</strong> {{ appointment.reason }}</li>
-    </ul>
+        <div class="confirmation-box">
+            <ul>
+                <li><strong>Patient:</strong> {{ appointment.patient.last_name }}, {{ appointment.patient.first_name }}</li>
+                <li><strong>Provider:</strong> {{ appointment.provider.name }}</li>
+                <li><strong>Time:</strong> {{ appointment.start_time|date:"M. j, Y H:i" }}</li>
+                <li><strong>Reason:</strong> {{ appointment.reason }}</li>
+            </ul>
+        </div>
 
-    <form method="post">
-        {% csrf_token %}
-        <button type="submit" style="background-color: red; color: white;">Yes, Cancel Appointment</button>
-        <a href="{% url 'appointment_list' %}">No, Keep Appointment</a>
-    </form>
-
+        <form method="post">
+            {% csrf_token %}
+            <div class="btn-group-custom">
+                <button type="submit" class="btn btn-danger">
+                    <i class="bi bi-x-circle me-1"></i> Yes, Cancel Appointment
+                </button>
+                <a href="{% url 'appointment_list' %}" class="btn btn-outline-secondary">No, Keep Appointment</a>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}

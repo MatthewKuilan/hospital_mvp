@@ -1,19 +1,46 @@
 {% extends "clinic/base.html" %}
+
+{% block title %}Patients - Hospital MVP{% endblock %}
+
 {% block content %}
-<h2>Patients</h2>
-<a href="{% url 'patient_create' %}">Add Patient</a>
-<table border="1">
-    <tr>
-        <th>Chart #</th><th>Name</th><th>DOB</th><th>Phone</th><th>Actions</th>
-    </tr>
-    {% for p in patients %}
-    <tr>
-        <td>{{ p.chart_number }}</td>
-        <td>{{ p.last_name }}, {{ p.first_name }}</td>
-        <td>{{ p.date_of_birth }}</td>
-        <td>{{ p.phone }}</td>
-        <td><a href="{% url 'patient_edit' p.id %}">Edit</a></td>
-    </tr>
-    {% endfor %}
-</table>
+<div class="page-header d-flex justify-content-between align-items-center">
+    <h2 class="page-title mb-0">Patients</h2>
+    <a href="{% url 'patient_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-1"></i> Add Patient
+    </a>
+</div>
+
+{% if patients %}
+    <div class="table-wrapper">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Chart #</th>
+                    <th>Name</th>
+                    <th>Date of Birth</th>
+                    <th>Phone</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in patients %}
+                <tr>
+                    <td>{{ p.chart_number }}</td>
+                    <td>{{ p.last_name }}, {{ p.first_name }}</td>
+                    <td>{{ p.date_of_birth }}</td>
+                    <td>{{ p.phone }}</td>
+                    <td class="table-actions">
+                        <a href="{% url 'patient_edit' p.id %}">Edit</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <div class="empty-state">
+        <p>No patients found.</p>
+        <a href="{% url 'patient_create' %}" class="btn btn-primary">Add Your First Patient</a>
+    </div>
+{% endif %}
 {% endblock %}

@@ -1,55 +1,80 @@
 {% extends "clinic/base.html" %}
+
+{% block title %}Provider Calendar - Hospital MVP{% endblock %}
+
 {% block content %}
+<div class="page-header">
+    <h2 class="page-title">Provider Calendar</h2>
+</div>
 
-    <h2>Provider Calendar View</h2>
-
-    {# --- Filtering Form --- #}
+<div class="calendar-filters">
     <form method="get" action="{% url 'provider_calendar' %}">
-        <label for="provider">Select Provider:</label>
-        <select name="provider" id="provider" required>
-            <option value="">-- Select --</option>
-            {% for p in providers %}
-                <option value="{{ p.id }}" {% if p == selected_provider %}selected{% endif %}>
-                    {{ p.name }}
-                </option>
-            {% endfor %}
-        </select>
-        
-        <label for="date">Select Date:</label>
-        <input type="date" name="date" id="date" value="{{ selected_date|date:'Y-m-d' }}" required>
-        
-        <button type="submit">View Schedule</button>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label for="provider" class="form-label">Provider</label>
+                <select name="provider" id="provider" class="form-select" required>
+                    <option value="">Select provider</option>
+                    {% for p in providers %}
+                        <option value="{{ p.id }}" {% if p == selected_provider %}selected{% endif %}>
+                            {{ p.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label for="date" class="form-label">Date</label>
+                <input type="date" name="date" id="date" class="form-control" value="{{ selected_date|date:'Y-m-d' }}" required>
+            </div>
+
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-calendar3 me-1"></i> View Schedule
+                </button>
+            </div>
+        </div>
     </form>
+</div>
 
-    <hr>
+{% if selected_provider %}
+    <div class="mb-3">
+        <h3 class="h5 text-muted">{{ selected_provider.name }} - {{ selected_date|date:"l, F j, Y" }}</h3>
+    </div>
 
-    {# --- Schedule Display --- #}
-    {% if selected_provider %}
-        <h3>Schedule for {{ selected_provider.name }} on {{ selected_date|date:"l, F j, Y" }}</h3>
-
-        {% if appointments %}
-            <table border="1">
-                <tr>
-                    <th>Time</th>
-                    <th>Patient</th>
-                    <th>Reason</th>
-                    <th>Actions</th>
-                </tr>
-                {% for a in appointments %}
-                <tr>
-                    <td>{{ a.start_time|date:"h:i A" }} - {{ a.end_time|date:"h:i A" }}</td>
-                    <td>{{ a.patient.last_name }}, {{ a.patient.first_name }} (Chart: {{ a.patient.chart_number }})</td>
-                    <td>{{ a.reason }}</td>
-                    <td><a href="{% url 'appointment_edit' a.id %}">Edit</a></td>
-                </tr>
-                {% endfor %}
+    {% if appointments %}
+        <div class="table-wrapper">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Patient</th>
+                        <th>Reason</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in appointments %}
+                    <tr>
+                        <td>{{ a.start_time|date:"h:i A" }} - {{ a.end_time|date:"h:i A" }}</td>
+                        <td>{{ a.patient.last_name }}, {{ a.patient.first_name }} <span class="text-muted">(#{{ a.patient.chart_number }})</span></td>
+                        <td>{{ a.reason }}</td>
+                        <td class="table-actions">
+                            <a href="{% url 'appointment_edit' a.id %}">Edit</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
             </table>
-        {% else %}
-            <p style="color: green;">{{ selected_provider.name }} has no scheduled appointments on this date and is available.</p>
-        {% endif %}
-
+        </div>
     {% else %}
-        <p>Please select a provider and date to view the schedule.</p>
+        <div class="availability-message">
+            <i class="bi bi-check-circle me-2"></i>
+            {{ selected_provider.name }} has no scheduled appointments on this date and is available.
+        </div>
     {% endif %}
-
+{% else %}
+    <div class="empty-state">
+        <p>Please select a provider and date to view the schedule.</p>
+    </div>
+{% endif %}
 {% endblock %}

@@ -1,35 +1,63 @@
 {% extends "clinic/base.html" %}
+
+{% block title %}Patient Search - Hospital MVP{% endblock %}
+
 {% block content %}
+<div class="page-header">
+    <h2 class="page-title">Patient Search</h2>
+</div>
 
-    <h2>Patient Search</h2>
-
+<div class="search-bar">
     <form method="get" action="{% url 'patient_search' %}">
-        {# The form includes fields for name, DOB, and phone #}
-        {{ form.as_p }}
-        <button type="submit">Search</button>
-        <a href="{% url 'patient_search' %}">Clear Search</a>
-    </form>
-
-    <hr>
-    
-    {% if results %}
-        <h3>Search Results ({{ results|length }} Found)</h3>
-        <table border="1">
-            <tr>
-                <th>Chart #</th><th>Name</th><th>DOB</th><th>Phone</th><th>Actions</th>
-            </tr>
-            {% for p in results %}
-            <tr>
-                <td>{{ p.chart_number }}</td>
-                <td><a href="{% url 'patient_edit' p.id %}">{{ p.last_name }}, {{ p.first_name }}</a></td>
-                <td>{{ p.date_of_birth|date:"M. j, Y" }}</td>
-                <td>{{ p.phone }}</td>
-                <td><a href="{% url 'patient_edit' p.id %}">Edit</a></td>
-            </tr>
+        <div class="row g-3">
+            {% for field in form %}
+            <div class="col-md-4">
+                {{ field }}
+            </div>
             {% endfor %}
-        </table>
-    {% elif form.is_bound and not results %}
-        <p>No patients matched your search criteria.</p>
-    {% endif %}
+            <div class="col-md-12">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-search me-1"></i> Search
+                </button>
+                <a href="{% url 'patient_search' %}" class="btn btn-outline-secondary ms-2">Clear</a>
+            </div>
+        </div>
+    </form>
+</div>
 
+{% if results %}
+    <div class="mb-3">
+        <p class="text-muted"><strong>{{ results|length }}</strong> patient(s) found</p>
+    </div>
+    <div class="table-wrapper">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Chart #</th>
+                    <th>Name</th>
+                    <th>Date of Birth</th>
+                    <th>Phone</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in results %}
+                <tr>
+                    <td>{{ p.chart_number }}</td>
+                    <td><a href="{% url 'patient_edit' p.id %}">{{ p.last_name }}, {{ p.first_name }}</a></td>
+                    <td>{{ p.date_of_birth|date:"M. j, Y" }}</td>
+                    <td>{{ p.phone }}</td>
+                    <td class="table-actions">
+                        <a href="{% url 'patient_edit' p.id %}">Edit</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% elif form.is_bound and not results %}
+    <div class="empty-state">
+        <p>No patients matched your search criteria.</p>
+    </div>
+{% endif %}
 {% endblock %}

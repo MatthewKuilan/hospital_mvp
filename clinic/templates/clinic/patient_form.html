@@ -1,16 +1,26 @@
 {% extends "clinic/base.html" %}
+
+{% block title %}{{ title }} - Hospital MVP{% endblock %}
+
 {% block content %}
+<div class="page-header">
+    <h2 class="page-title">{{ title }}</h2>
+</div>
 
-    <h2>{{ title }}</h2> 
-    
-    <form method="post">
-        {% csrf_token %}
-        
-        {# Display form fields with labels and input boxes #}
-        {{ form.as_p }}
-        
-        <button type="submit">Save Patient</button>
-        <a href="{% url 'patient_list' %}">Cancel</a>
-    </form>
+<div class="row">
+    <div class="col-md-8 col-lg-6">
+        <form method="post">
+            {% csrf_token %}
 
+            {{ form.as_p }}
+
+            <div class="btn-group-custom">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-circle me-1"></i> Save Patient
+                </button>
+                <a href="{% url 'patient_list' %}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}
