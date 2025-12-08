@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediCore HMS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 font-sans flex h-screen overflow-hidden">
+
+    {% if current_user.is_authenticated %}
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white shadow-lg flex flex-col justify-between h-full fixed left-0 top-0 z-10">
+        <div>
+            <div class="p-6 border-b border-gray-200">
+                <h1 class="text-2xl font-bold text-blue-900">MediCore</h1>
+            </div>
+
+            <nav class="mt-6">
+                <!-- Helper for active class -->
+                {% set active_class = "bg-teal-50 text-teal-700 border-r-4 border-teal-700" %}
+                {% set inactive_class = "text-gray-600 hover:bg-gray-50 hover:text-gray-900 border-r-4
+                border-transparent" %}
+
+                <a href="{{ url_for('dashboard') }}"
+                    class="block px-6 py-3 font-medium {{ active_class if request.endpoint == 'dashboard' else inactive_class }}">
+                    Dashboard
+                </a>
+                <a href="{{ url_for('patients') }}"
+                    class="block px-6 py-3 font-medium {{ active_class if request.endpoint == 'patients' else inactive_class }}">
+                    Patients
+                </a>
+                <a href="{{ url_for('appointments_view') }}"
+                    class="block px-6 py-3 font-medium {{ active_class if request.endpoint == 'appointments_view' else inactive_class }}">
+                    Appointments
+                </a>
+                <a href="{{ url_for('billing') }}"
+                    class="block px-6 py-3 font-medium {{ active_class if request.endpoint == 'billing' else inactive_class }}">
+                    Billing
+                </a>
+            </nav>
+        </div>
+
+        <!-- UAT Controls -->
+        <div class="p-6 bg-gray-50 border-t border-gray-200">
+            <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">UAT Controls</h3>
+            <a href="{{ url_for('debug_reset') }}"
+                class="block w-full text-center bg-white border border-gray-300 text-gray-700 font-medium py-2 rounded shadow-sm hover:bg-gray-50 hover:text-red-600 transition duration-150">
+                Reset Database
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content Wrapper -->
+    <div class="flex-1 flex flex-col ml-64 h-full overflow-y-auto">
+        {% else %}
+        <!-- Login Page Layout Wrapper -->
+        <div class="flex-1 flex flex-col h-full overflow-y-auto">
+            {% endif %}
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            {% if category == 'error' %}
+            <div class="bg-red-500 text-white p-4 text-center">
+                {{ message }}
+            </div>
+            {% elif category == 'success' %}
+            <div class="bg-green-500 text-white p-4 text-center">
+                {{ message }}
+            </div>
+            {% endif %}
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+
+        </div>
+
+</body>
+
+</html>

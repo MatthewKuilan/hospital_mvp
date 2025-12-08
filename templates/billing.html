@@ -1,0 +1,403 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="p-8">
+
+    <!-- Header & Actions -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800">Billing</h1>
+            <p class="text-gray-500">Manage invoices and payments.</p>
+        </div>
+        <button onclick="openCreateModal()"
+            class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow">
+            Create Invoice
+        </button>
+    </div>
+
+    <!-- Invoices Table -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+        <table class="min-w-full text-left">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
+                    <th class="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Patient</th>
+                    <th class="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Total</th>
+                    <th class="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Paid</th>
+                    <th class="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Balance</th>
+                    <th class="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                {% for inv in invoices %}
+                <tr class="hover:bg-gray-50 cursor-pointer" onclick="openDetailModal({{ inv.id }})">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ inv.date_issued }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ inv.patient.name }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${{ "%.2f"|format(inv.total_amount) }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" id="paid-{{ inv.id }}">${{
+                        "%.2f"|format(inv.paid_amount) }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-700" id="balance-{{ inv.id }}">
+                        ${{ "%.2f"|format(inv.balance_due) }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <span id="badge-{{ inv.id }}"
+                            class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                            {% if inv.status == 'PAID' %} bg-green-100 text-green-800 {% elif inv.status == 'PARTIAL' %} bg-orange-100 text-orange-800 {% else %} bg-blue-100 text-blue-800 {% endif %}">
+                            {{ inv.status }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-blue-600" onclick="event.stopPropagation()">
+                        {% if inv.status != 'PAID' %}
+                        <button onclick="openPayModal({{ inv.id }})"
+                            class="hover:text-blue-900 hover:underline">Pay</button>
+                        {% else %}
+                        <span class="text-gray-400 cursor-default">Paid</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<!-- Create Invoice Modal -->
+<div id="createModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-10 mx-auto p-0 border w-2/3 shadow-2xl rounded-lg bg-white overflow-hidden">
+        <!-- Header -->
+        <div class="px-8 py-5 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+            <h3 class="text-xl font-bold text-gray-800">New Invoice</h3>
+            <span class="bg-gray-200 text-gray-600 text-xs font-bold px-2 py-1 rounded">DRAFT</span>
+        </div>
+
+        <div class="p-8 max-h-[70vh] overflow-y-auto">
+            <div class="grid grid-cols-2 gap-8 mb-8">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Patient</label>
+                    <select id="invoicePatient"
+                        class="block w-full bg-yellow-50 border border-gray-300 rounded px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <!-- Populated via API -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Invoice Date</label>
+                    <input type="date" id="invoiceDate" value="{{ today }}"
+                        class="block w-full border border-gray-300 rounded px-4 py-3">
+                </div>
+            </div>
+
+            <!-- Line Items -->
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-4">Line Items</label>
+                <table class="w-full mb-4">
+                    <thead>
+                        <tr class="bg-gray-50 text-left">
+                            <th class="p-3 text-xs font-bold text-gray-500 uppercase">Description</th>
+                            <th class="p-3 text-xs font-bold text-gray-500 uppercase w-20">Qty</th>
+                            <th class="p-3 text-xs font-bold text-gray-500 uppercase w-32">Unit Price</th>
+                            <th class="p-3 text-xs font-bold text-gray-500 uppercase w-32 text-right">Total</th>
+                            <th class="p-3 w-10"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="lineItemsBody">
+                        <!-- Rows goes here -->
+                    </tbody>
+                </table>
+                <button type="button" onclick="addItemRow()"
+                    class="text-teal-600 font-bold text-sm flex items-center hover:text-teal-800">
+                    <span class="mr-1">+</span> Add Item
+                </button>
+            </div>
+
+            <div class="flex justify-end mt-8 border-t pt-4">
+                <div class="text-right">
+                    <p class="text-gray-500 text-sm">Estimated Total</p>
+                    <p class="text-2xl font-bold text-gray-800" id="createTotalDisplay">$0.00</p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="px-8 py-5 border-t border-gray-200 bg-gray-50 flex justify-end space-x-3">
+            <button onclick="closeCreateModal()"
+                class="text-gray-600 hover:text-gray-800 font-bold px-4 py-2">Cancel</button>
+            <button onclick="submitInvoice()"
+                class="bg-teal-700 hover:bg-teal-800 text-white font-bold px-6 py-2 rounded shadow">Save
+                Invoice</button>
+        </div>
+    </div>
+</div>
+
+<!-- Invoice Detail Modal -->
+<div id="detailModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-10 mx-auto p-0 border w-2/3 shadow-2xl rounded-lg bg-white overflow-hidden">
+
+        <div class="p-8" id="detailContent">
+            <!-- Content populated by JS -->
+            <div class="flex justify-between items-start mb-8">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <div class="p-2 bg-gray-100 rounded">📄</div>
+                        <h1 class="text-2xl font-bold text-gray-900" id="detailTitle">Invoice #INV-???</h1>
+                    </div>
+                    <p class="text-gray-500 mt-1" id="detailDate">Issued: ...</p>
+                </div>
+                <div id="detailStatusBadge">
+                    <!-- Badge -->
+                </div>
+            </div>
+
+            <div class="flex justify-between mb-10">
+                <div>
+                    <p class="text-xs font-bold text-gray-500 uppercase mb-1">Bill To</p>
+                    <p class="font-bold text-lg text-gray-900" id="detailPatientName">...</p>
+                    <p class="text-gray-500" id="detailPatientChart">Chart #...</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-xs font-bold text-gray-500 uppercase mb-1">Provider</p>
+                    <p class="font-bold text-gray-900">Dr. Rivera</p> <!-- Mocked for now -->
+                    <p class="text-gray-500">General Practice</p>
+                </div>
+            </div>
+
+            <table class="w-full mb-8">
+                <thead>
+                    <tr class="border-b border-gray-200">
+                        <th class="py-3 text-left text-sm font-bold text-gray-600">Description</th>
+                        <th class="py-3 text-center text-sm font-bold text-gray-600">Qty</th>
+                        <th class="py-3 text-right text-sm font-bold text-gray-600">Unit Price</th>
+                        <th class="py-3 text-right text-sm font-bold text-gray-600">Amount</th>
+                    </tr>
+                </thead>
+                <tbody id="detailItemsBody" class="divide-y divide-gray-100">
+                    <!-- Items -->
+                </tbody>
+            </table>
+
+            <div class="flex justify-end">
+                <div class="w-64">
+                    <div class="flex justify-between py-2 text-gray-600">
+                        <span>Subtotal</span>
+                        <span id="detailSubtotal">$0.00</span>
+                    </div>
+                    <div class="flex justify-between py-2 text-gray-600 border-b border-gray-200 mb-2">
+                        <span>Tax (0%)</span>
+                        <span>$0.00</span>
+                    </div>
+                    <div class="flex justify-between py-2 text-xl font-bold text-teal-800">
+                        <span>Total Due</span>
+                        <span id="detailTotal">$0.00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="px-8 py-5 border-t border-gray-200 bg-gray-50 flex justify-end space-x-3">
+            <button onclick="window.print()"
+                class="bg-white border border-gray-300 text-gray-700 font-bold px-4 py-2 rounded">
+                Print
+            </button>
+            <button onclick="closeDetailModal()" class="bg-gray-800 text-white font-bold px-6 py-2 rounded">
+                Close
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<!-- Pay Modal (Reuse) -->
+<div id="payModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Record Payment</h3>
+        <form id="payForm">
+            <input type="hidden" id="payInvoiceId">
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">Payment Amount</label>
+                <input type="number" id="payAmount" step="0.01" class="border rounded w-full py-2 px-3 text-gray-700">
+            </div>
+            <div class="flex justify-end gap-2">
+                <button type="button" onclick="closePayModal()"
+                    class="bg-gray-500 text-white px-4 py-2 rounded">Cancel</button>
+                <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded">Pay</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', loadPatients);
+
+    async function loadPatients() {
+        const response = await fetch('/patients/api/search');
+        const patients = await response.json();
+        const select = document.getElementById('invoicePatient');
+        patients.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = `${p.name} (CH-${p.chart_number})`;
+            select.appendChild(opt);
+        });
+
+        // Add one default row
+        addItemRow();
+    }
+
+    // --- Create Invoice Logic ---
+    function openCreateModal() {
+        document.getElementById('createModal').classList.remove('hidden');
+    }
+
+    function closeCreateModal() {
+        document.getElementById('createModal').classList.add('hidden');
+    }
+
+    function addItemRow() {
+        const tbody = document.getElementById('lineItemsBody');
+        const tr = document.createElement('tr');
+        tr.className = "bg-yellow-50/20"; // slight tint
+        tr.innerHTML = `
+            <td class="p-2"><input type="text" class="w-full border-gray-300 rounded p-2 text-sm font-bold text-gray-700 bg-transparent" placeholder="Item Name" name="desc"></td>
+            <td class="p-2"><input type="number" class="w-full border-gray-300 rounded p-2 text-sm text-center" value="1" min="1" name="qty" onchange="calcTotal()"></td>
+            <td class="p-2"><input type="number" class="w-full border-gray-300 rounded p-2 text-sm text-right" value="0.00" min="0" step="0.01" name="price" onchange="calcTotal()"></td>
+            <td class="p-2 text-right font-bold text-gray-800 row-total">$0.00</td>
+            <td class="p-2 text-center text-gray-400 cursor-pointer hover:text-red-500" onclick="this.closest('tr').remove(); calcTotal()">🗑</td>
+        `;
+        tbody.appendChild(tr);
+    }
+
+    function calcTotal() {
+        let total = 0;
+        const rows = document.querySelectorAll('#lineItemsBody tr');
+        rows.forEach(row => {
+            const qty = parseFloat(row.querySelector('[name="qty"]').value) || 0;
+            const price = parseFloat(row.querySelector('[name="price"]').value) || 0;
+            const rowTotal = qty * price;
+            total += rowTotal;
+            row.querySelector('.row-total').textContent = '$' + rowTotal.toFixed(2);
+        });
+        document.getElementById('createTotalDisplay').textContent = '$' + total.toFixed(2);
+    }
+
+    async function submitInvoice() {
+        const patientId = document.getElementById('invoicePatient').value;
+        const date = document.getElementById('invoiceDate').value;
+
+        const items = [];
+        document.querySelectorAll('#lineItemsBody tr').forEach(row => {
+            items.push({
+                description: row.querySelector('[name="desc"]').value,
+                qty: row.querySelector('[name="qty"]').value,
+                unit_price: row.querySelector('[name="price"]').value
+            });
+        });
+
+        if (items.length === 0) {
+            alert("Add at least one item");
+            return;
+        }
+
+        const response = await fetch('/invoices/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ patient_id: patientId, date: date, items: items })
+        });
+
+        if (response.ok) {
+            window.location.reload();
+        } else {
+            alert('Error creating invoice');
+        }
+    }
+
+    // --- Detail Modal Logic ---
+    async function openDetailModal(id) {
+        const response = await fetch(`/invoices/${id}/details`);
+        const data = await response.json();
+
+        const m = document.getElementById('detailModal');
+        document.getElementById('detailTitle').textContent = `Invoice #INV-${1000 + data.id}`;
+        document.getElementById('detailDate').textContent = `Issued: ${data.date}`;
+        document.getElementById('detailPatientName').textContent = data.patient_name;
+        document.getElementById('detailPatientChart').textContent = `Chart #${data.patient_chart}`;
+
+        // Badge
+        let badgeClass = "bg-blue-100 text-blue-800";
+        if (data.status === 'PAID') badgeClass = "bg-green-100 text-green-800";
+        else if (data.status === 'PARTIAL') badgeClass = "bg-orange-100 text-orange-800";
+
+        document.getElementById('detailStatusBadge').innerHTML = `
+            <span class="px-3 py-1 rounded-full text-sm font-bold ${badgeClass} uppercase tracking-wide">
+                ${data.status}
+            </span>
+        `;
+
+        // Items
+        const tbody = document.getElementById('detailItemsBody');
+        tbody.innerHTML = '';
+        data.items.forEach(item => {
+            tbody.innerHTML += `
+                <tr>
+                    <td class="py-3 text-left text-gray-900 font-medium">${item.description}</td>
+                    <td class="py-3 text-center text-gray-600">${item.qty}</td>
+                    <td class="py-3 text-right text-gray-600">$${item.unit_price.toFixed(2)}</td>
+                    <td class="py-3 text-right text-gray-900 font-bold">$${item.total.toFixed(2)}</td>
+                </tr>
+            `;
+        });
+
+        document.getElementById('detailSubtotal').textContent = '$' + data.total.toFixed(2);
+        document.getElementById('detailTotal').textContent = '$' + data.total.toFixed(2); // No tax logic for now
+
+        m.classList.remove('hidden');
+    }
+
+    function closeDetailModal() {
+        document.getElementById('detailModal').classList.add('hidden');
+    }
+
+    // --- Pay Modal Logic (Existing) ---
+    function openPayModal(id) {
+        document.getElementById('payInvoiceId').value = id;
+        document.getElementById('payModal').classList.remove('hidden');
+        document.getElementById('payAmount').value = '';
+        document.getElementById('payAmount').focus();
+    }
+    function closePayModal() {
+        document.getElementById('payModal').classList.add('hidden');
+    }
+
+    document.getElementById('payForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('payInvoiceId').value;
+        const amount = document.getElementById('payAmount').value;
+
+        const response = await fetch(`/invoices/${id}/pay`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ amount: amount })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            closePayModal();
+            // Partial page update for the table in background
+            const rowBalance = document.getElementById(`balance-${id}`);
+            if (rowBalance) rowBalance.textContent = `$${result.new_balance.toFixed(2)}`;
+            const rowBadge = document.getElementById(`badge-${id}`);
+            if (rowBadge) {
+                rowBadge.textContent = result.new_status;
+                // Quick dirty class update or reload
+                window.location.reload(); // Reload is safer to sync everything including detail view if re-opened
+            }
+        } else {
+            alert(result.error);
+        }
+    });
+
+</script>
+{% endblock %}

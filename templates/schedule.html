@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="p-8 h-full flex flex-col">
+
+    <!-- Header & Controls -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800">Schedule</h1>
+            <p class="text-gray-500">Manage appointments and availability.</p>
+        </div>
+        <div class="flex space-x-4">
+            <input type="date" id="dateFilter" class="border rounded px-3 py-2 text-gray-700" value="{{ date_today }}">
+            <!-- Simplified Staff Selector for now, defaulting to '1' or dynamic if we had list passed -->
+            <select id="staffFilter" class="border rounded px-3 py-2 text-gray-700">
+                <!-- Ideally populated from backend, hardcoding for staff1 demo -->
+                <option value="1">Dr. Staff1</option>
+                <option value="2">Dr. Smith</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Time Slots Grid -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-100 flex-1 overflow-y-auto p-6 relative">
+        <div id="scheduleGrid" class="space-y-4">
+            <!-- Slots generating by JS -->
+        </div>
+    </div>
+
+</div>
+
+<!-- Booking Modal -->
+<div id="bookingModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-40">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3 text-center">
+            <h3 class="text-lg leading-6 font-medium text-gray-900" id="modalTitle">Book Appointment</h3>
+
+            <!-- Red Alert Banner for Conflict -->
+            <div id="modalError"
+                class="hidden mt-2 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-left text-sm"
+                role="alert">
+                <strong class="font-bold">Error!</strong>
+                <span class="block sm:inline" id="modalErrorMessage">Something went wrong.</span>
+            </div>
+
+            <form id="bookingForm" class="mt-4 text-left">
+                <input type="hidden" id="bookTime">
+
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Date</label>
+                    <input type="text" id="bookDateDisplay" disabled
+                        class="bg-gray-100 border rounded w-full py-2 px-3 text-gray-700">
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Time</label>
+                    <input type="text" id="bookTimeDisplay" disabled
+                        class="bg-gray-100 border rounded w-full py-2 px-3 text-gray-700">
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="patientSelect">Patient</label>
+                    <select id="patientSelect"
+                        class="bg-white border rounded w-full py-2 px-3 text-gray-700 focus:outline-none focus:shadow-outline">
+                        <!-- Populated via API -->
+                    </select>
+                </div>
+
+                <div class="flex items-center justify-between mt-6">
+                    <button type="button" onclick="closeModal()"
+                        class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                        Cancel
+                    </button>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                        Confirm
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- View/Cancel Modal -->
+<div id="viewModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-40">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3 text-center">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Appointment Details</h3>
+
+            <div class="mt-4 text-left space-y-2">
+                <p><strong>Patient:</strong> <span id="viewPatient"></span></p>
+                <p><strong>Status:</strong> <span id="viewStatus"></span></p>
+                <p id="viewReasonContainer" class="hidden"><strong>Reason:</strong> <span id="viewReason"></span></p>
+            </div>
+
+            <div id="cancelSection" class="mt-6 border-t pt-4">
+                <p class="text-sm text-gray-500 mb-2">Cancel this appointment?</p>
+                <input type="text" id="cancelReason" placeholder="Reason for cancellation"
+                    class="border rounded w-full py-2 px-3 text-gray-700 mb-2 text-sm">
+                <button onclick="cancelAppointment()"
+                    class="w-full bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+                    Cancel Appointment
+                </button>
+            </div>
+
+            <div class="mt-4">
+                <button onclick="closeViewModal()"
+                    class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded w-full">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // State
+    let currentAppointments = [];
+    const timeSlots = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00"];
+    let selectedApptId = null;
+
+    // Loaders
+    document.addEventListener('DOMContentLoaded', () => {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('dateFilter').value = today;
+        loadSchedule();
+        loadPatients();
+
+        document.getElementById('dateFilter').addEventListener('change', loadSchedule);
+        document.getElementById('staffFilter').addEventListener('change', loadSchedule);
+    });
+
+    async function loadPatients() {
+        const response = await fetch('/patients/api/search');
+        const patients = await response.json();
+        const select = document.getElementById('patientSelect');
+        select.innerHTML = '<option value="">Select Patient...</option>';
+        patients.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = `${p.name} (Chart: ${p.chart_number})`;
+            select.appendChild(opt);
+        });
+    }
+
+    async function loadSchedule() {
+        const date = document.getElementById('dateFilter').value;
+        const staffId = document.getElementById('staffFilter').value;
+
+        const response = await fetch(`/appointments/api/list?date=${date}&staff_id=${staffId}`);
+        currentAppointments = await response.json();
+
+        renderGrid();
+    }
+
+    function renderGrid() {
+        const container = document.getElementById('scheduleGrid');
+        container.innerHTML = '';
+
+        timeSlots.forEach(time => {
+            // Find appointment for this slot
+            // Naive match for HH:MM
+            const appt = currentAppointments.find(a => a.time.substring(0, 5) === time && a.status !== 'Canceled');
+
+            const slotDiv = document.createElement('div');
+            slotDiv.className = "flex items-center p-4 border rounded hover:bg-gray-50 transition";
+
+            if (appt) {
+                // Booked Slot (Blue Card)
+                slotDiv.classList.add('bg-blue-50', 'border-blue-200');
+                slotDiv.innerHTML = `
+                    <div class="w-24 font-bold text-gray-700">${time}</div>
+                    <div class="flex-1">
+                        <div class="font-bold text-blue-800">${appt.patient_name}</div>
+                        <div class="text-xs text-blue-600">${appt.status}</div>
+                    </div>
+                    <button onclick="openViewModal(${appt.id})" class="text-sm text-blue-600 underline">View</button>
+                `;
+            } else {
+                // Empty Slot
+                slotDiv.innerHTML = `
+                    <div class="w-24 font-bold text-gray-500">${time}</div>
+                    <div class="flex-1 text-gray-400 italic">Available</div>
+                     <button onclick="openBookingModal('${time}')" class="bg-green-500 hover:bg-green-600 text-white text-xs font-bold py-1 px-3 rounded shadow-sm">
+                        Book
+                    </button>
+                `;
+            }
+            container.appendChild(slotDiv);
+        });
+    }
+
+    // Booking Logic
+    function openBookingModal(time) {
+        document.getElementById('bookingModal').classList.remove('hidden');
+        document.getElementById('modalError').classList.add('hidden');
+        document.getElementById('bookTime').value = time;
+        document.getElementById('bookTimeDisplay').value = time;
+        document.getElementById('bookDateDisplay').value = document.getElementById('dateFilter').value;
+    }
+
+    function closeModal() {
+        document.getElementById('bookingModal').classList.add('hidden');
+    }
+
+    document.getElementById('bookingForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const date = document.getElementById('dateFilter').value;
+        const time = document.getElementById('bookTime').value;
+        const staffId = document.getElementById('staffFilter').value;
+        const patientId = document.getElementById('patientSelect').value;
+
+        if (!patientId) {
+            alert("Please select a patient");
+            return;
+        }
+
+        const payload = {
+            date: date,
+            time: time,
+            staff_id: staffId,
+            patient_id: patientId
+        };
+
+        const response = await fetch('/appointments/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (response.status === 409) {
+            // Conflict! Show Red Banner
+            const errDiv = document.getElementById('modalError');
+            document.getElementById('modalErrorMessage').textContent = result.error;
+            errDiv.classList.remove('hidden');
+        } else if (response.ok) {
+            closeModal();
+            loadSchedule(); // Refresh
+        } else {
+            // Generic error
+            alert("Error: " + (result.error || "Unknown"));
+        }
+    });
+
+    // View/Cancel Logic
+    function openViewModal(id) {
+        selectedApptId = id;
+        const appt = currentAppointments.find(a => a.id === id);
+        if (!appt) return;
+
+        document.getElementById('viewPatient').textContent = appt.patient_name;
+        document.getElementById('viewStatus').textContent = appt.status;
+
+        // Hide cancel if already cancelled (though logic above filters them, robust code handles it)
+        const cancelSection = document.getElementById('cancelSection');
+        if (appt.status === 'Canceled') {
+            cancelSection.classList.add('hidden');
+            document.getElementById('viewReasonContainer').classList.remove('hidden');
+            document.getElementById('viewReason').textContent = appt.reason;
+        } else {
+            cancelSection.classList.remove('hidden');
+            document.getElementById('viewReasonContainer').classList.add('hidden');
+        }
+
+        document.getElementById('viewModal').classList.remove('hidden');
+    }
+
+    function closeViewModal() {
+        document.getElementById('viewModal').classList.add('hidden');
+    }
+
+    async function cancelAppointment() {
+        const reason = document.getElementById('cancelReason').value;
+        if (!reason) {
+            alert("Please provide a cancellation reason.");
+            return;
+        }
+
+        const response = await fetch(`/appointments/${selectedApptId}/status`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'Canceled', reason: reason })
+        });
+
+        if (response.ok) {
+            closeViewModal();
+            loadSchedule();
+        } else {
+            const res = await response.json();
+            alert(res.error);
+        }
+    }
+
+</script>
+{% endblock %}
