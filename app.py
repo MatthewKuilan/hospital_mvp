@@ -54,8 +54,9 @@ def seed_data():
     staff2 = Staff(username='Dr. Smith', password='Pass123', role='Doctor') # Password wasn't specified but needed for model
     
     # Patients
-    patient1 = Patient(name='Alex Lee', dob=date(1999, 1, 20), chart_number='CH-1001', phone='555-0101')
-    patient2 = Patient(name='Priya Shah', dob=date(1990, 1, 1), chart_number='CH-1002', phone='555-0102') # DOB not specified for Priya, using dummy
+    patient1 = Patient(name='Alex Lee', dob=date(1999, 1, 20), chart_number='CH-1001', phone='555-0101', address='123 Maple Dr, NY', status='Active')
+    patient2 = Patient(name='Priya Shah', dob=date(1990, 1, 1), chart_number='CH-1002', phone='555-0102', address='456 Oak Ln, NJ', status='Active')
+    
     
     # Commit first to get IDs
     db.session.add(staff1)
@@ -64,12 +65,14 @@ def seed_data():
     db.session.add(patient2)
     db.session.commit()
     
-    # Appointment
-    # Dr. Rivera (staff1)
-    appt = Appointment(staff_id=staff1.id, patient_id=patient1.id, date=date(2025, 12, 1), time=time(9, 0), status='Scheduled')
+    # Appointments
+    appt = Appointment(staff_id=staff1.id, patient_id=patient1.id, date=date(2025, 12, 1), time=time(9, 0), status='Scheduled', visit_type='Consult')
     db.session.add(appt)
     db.session.commit()
-    db.session.add(appt)
+    # Re-reading: In previous seed_data I had a duplicate add block which was a bug (but ignored by SQLAlchemy often if same instance). 
+    # Let's create a second appointment properly.
+    appt2 = Appointment(staff_id=staff1.id, patient_id=patient2.id, date=date(2025, 12, 1), time=time(11, 0), status='Scheduled', visit_type='General Checkup')
+    db.session.add(appt2)
     db.session.commit()
     
     # Invoices
@@ -177,7 +180,9 @@ def patients_search():
         'name': p.name,
         'dob': p.dob.strftime('%Y-%m-%d'),
         'chart_number': p.chart_number,
-        'phone': p.phone
+        'phone': p.phone,
+        'address': p.address,
+        'status': p.status
     } for p in patients])
 
 @app.route('/patients/add', methods=['POST'])
@@ -189,12 +194,33 @@ def patients_add():
     if not data.get('phone'):
         return jsonify({'error': 'Phone number is required'}), 400
     
+    # Simple strict 10-digit validation or standard formats
+    # For now, let's enforce 10-15 chars, maybe allowing dashes/spaces but strip them for storage?
+    # User asked for "Strict number requirements".
+    # Regex: ^\d{10}$ (if strictly 10 digits) or similar.
+    # Let's clean the phone first
+    raw_phone = data['phone']
+    import re
+    # Remove non-digits
+    clean_phone = re.sub(r'\D', '', raw_phone)
+    if not (10 <= len(clean_phone) <= 15):
+         return jsonify({'error': 'Phone number must be 10-15 digits'}), 400
+        
+    first_name = data.get('first_name', '')
+    last_name = data.get('last_name', '')
+    full_name = f"{first_name} {last_name}".strip()
+    
+    if not full_name:
+         return jsonify({'error': 'Name is required'}), 400
+    
     try:
         new_patient = Patient(
-            name=data['name'],
+            name=full_name,
             dob=datetime.strptime(data['dob'], '%Y-%m-%d').date(),
             chart_number=data['chart_number'],
-            phone=data['phone']
+            phone=data['phone'],
+            address=data.get('address'),
+            status='Active'
         )
         db.session.add(new_patient)
         db.session.commit()
@@ -202,14 +228,56 @@ def patients_add():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/patients/<int:id>', methods=['PUT'])
+@login_required
+def patients_update(id):
+    patient = Patient.query.get_or_404(id)
+    data = request.get_json()
+    
+    # Validation
+    raw_phone = data.get('phone', patient.phone)
+    import re
+    clean_phone = re.sub(r'\D', '', raw_phone)
+    if not (10 <= len(clean_phone) <= 15):
+         return jsonify({'error': 'Phone number must be 10-15 digits'}), 400
+         
+    first_name = data.get('first_name', '')
+    last_name = data.get('last_name', '')
+    if first_name or last_name:
+         full_name = f"{first_name} {last_name}".strip()
+         if full_name:
+             patient.name = full_name
+             
+    if 'dob' in data:
+        patient.dob = datetime.strptime(data['dob'], '%Y-%m-%d').date()
+    
+    patient.phone = data.get('phone', patient.phone)
+    patient.address = data.get('address', patient.address)
+    patient.chart_number = data.get('chart_number', patient.chart_number)
+    
+    try:
+        db.session.commit()
+        return jsonify({'message': 'Patient Updated'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/patients/<int:id>', methods=['DELETE'])
+@login_required
+def patients_delete(id):
+    patient = Patient.query.get_or_404(id)
+    try:
+        db.session.delete(patient)
+        db.session.commit()
+        return jsonify({'message': 'Patient Deleted'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/appointments')
 @login_required
 def appointments_view():
-    # If it's an API call (e.g. for the schedule grid), we might want JSON
-    # But for now, let's just render the page. The page will fetch data via API or we pass it.
-    # The requirement says "View: List time slots".
-    # Let's render the template first.
-    return render_template('schedule.html')
+    staff = Staff.query.all()
+    today = date.today().strftime('%Y-%m-%d')
+    return render_template('schedule.html', staff=staff, today=today)
 
 @app.route('/appointments/api/list')
 @login_required
@@ -235,6 +303,7 @@ def appointments_list():
         'staff_name': a.staff.username,
         'time': a.time.strftime('%H:%M'),
         'status': a.status,
+        'visit_type': a.visit_type,
         'reason': a.reason
     } for a in appts])
 
@@ -242,38 +311,35 @@ def appointments_list():
 @login_required
 def appointments_create():
     data = request.get_json()
-    
     staff_id = data.get('staff_id')
     patient_id = data.get('patient_id')
     date_str = data.get('date')
     time_str = data.get('time')
+    visit_type = data.get('visit_type', 'General Checkup')
     
     if not all([staff_id, patient_id, date_str, time_str]):
-         return jsonify({'error': 'Missing required fields'}), 400
-
-    appt_date = datetime.strptime(date_str, '%Y-%m-%d').date()
-    # time_str is expected as "HH:MM"
-    # We might need to handle single digit hours if not padded, but frontend usually sends HH:MM
-    hour, minute = map(int, time_str.split(':'))
-    appt_time = time(hour, minute)
-
-    # CRITICAL: Conflict Check
-    # "If provider_id AND date AND start_time match an existing record (that is not Canceled)"
-    existing = Appointment.query.filter_by(
-        staff_id=staff_id,
-        date=appt_date,
-        time=appt_time
-    ).filter(Appointment.status != 'Canceled').first()
-    
-    if existing:
-        return jsonify({'error': f"Scheduling Conflict: {existing.staff.username} is already booked at this time."}), 409
+        return jsonify({'error': 'Missing fields'}), 400
         
     try:
+        appt_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        appt_time = datetime.strptime(time_str, '%H:%M').time()
+        
+        # Conflict Check
+        existing = Appointment.query.filter_by(
+            staff_id=staff_id,
+            date=appt_date,
+            time=appt_time
+        ).first()
+        
+        if existing and existing.status != 'Canceled':
+            return jsonify({'error': 'This time slot is already booked.'}), 409
+            
         new_appt = Appointment(
             staff_id=staff_id,
             patient_id=patient_id,
             date=appt_date,
             time=appt_time,
+            visit_type=visit_type,
             status='Scheduled'
         )
         db.session.add(new_appt)
@@ -285,22 +351,25 @@ def appointments_create():
 @app.route('/appointments/<int:id>/status', methods=['POST'])
 @login_required
 def appointments_status(id):
+    appt = Appointment.query.get_or_404(id)
     data = request.get_json()
-    status = data.get('status')
+    
+    new_status = data.get('status')
     reason = data.get('reason')
     
-    appt = Appointment.query.get_or_404(id)
-    
-    if status == 'Canceled':
-        if not reason:
-            return jsonify({'error': 'Reason is required for cancellation'}), 400
-        appt.status = 'Canceled'
-        appt.reason = reason
+    if new_status:
+        appt.status = new_status
+        if new_status == 'Canceled':
+             if not reason:
+                 return jsonify({'error': 'Reason required for cancellation'}), 400
+             appt.reason = reason
+        else:
+            # Clear reason if re-scheduled or completed?
+            # Ideally keep reason history, but for simple MVP:
+            pass 
+            
         db.session.commit()
-        return jsonify({'message': 'Appointment canceled'}), 200
-        
-    return jsonify({'error': 'Invalid status update'}), 400
-
+        return jsonify({'message': 'Status Updated'}), 200
         
     return jsonify({'error': 'Invalid status update'}), 400
 

@@ -1,124 +1,139 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="p-8">
+<div class="p-8 bg-gray-50 min-h-screen">
 
-    <!-- Header & Actions -->
+    <!-- Top Bar -->
     <div class="flex justify-between items-center mb-8">
-        <div>
-            <h1 class="text-3xl font-bold text-gray-800">Patients</h1>
-            <p class="text-gray-500">Manage patient records.</p>
-        </div>
+        <h1 class="text-2xl font-bold text-gray-800">Patient Management</h1>
         <button onclick="openModal()"
-            class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow">
-            Add Patient
+            class="bg-teal-700 hover:bg-teal-800 text-white font-bold py-2 px-6 rounded shadow flex items-center">
+            <span class="mr-2 text-xl">+</span> Add Patient
         </button>
     </div>
 
-    <!-- Search Bar -->
-    <div class="mb-6">
-        <input type="text" id="searchInput" onkeyup="searchPatients()"
-            placeholder="Search by Name, Chart No, or Phone..."
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
+    <!-- Search Section -->
+    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex items-center gap-4 mb-8">
+        <div class="relative flex-grow">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+            </span>
+            <input type="text" id="searchInput" placeholder="Search by name, chart number, or phone..."
+                class="w-full py-3 pl-10 pr-4 text-gray-700 bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition"
+                onkeyup="if(event.key === 'Enter') searchPatients()">
+        </div>
+        <button onclick="searchPatients()"
+            class="bg-teal-700 hover:bg-teal-800 text-white font-bold py-3 px-8 rounded-md shadow-sm transition">
+            Search
+        </button>
+        <button onclick="resetSearch()"
+            class="bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-3 px-6 rounded-md transition">
+            Reset
+        </button>
     </div>
 
-    <!-- Patients Table -->
+    <!-- Patient Table -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
-        <table class="min-w-full text-left">
+        <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
-                    <th class="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
-                    <th class="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Chart No</th>
-                    <th class="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">DOB</th>
-                    <th class="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Phone</th>
-                    <th class="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Chart #
+                    </th>
+                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Name</th>
+                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">DOB</th>
+                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Phone</th>
+                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-4 text-right text-xs font-bold text-gray-400 uppercase tracking-wider">Actions
+                    </th>
                 </tr>
             </thead>
-            <tbody id="patientsTableBody" class="divide-y divide-gray-200">
-                <!-- Data populated by JS -->
+            <tbody class="bg-white divide-y divide-gray-100" id="patientsTableBody">
+                <!-- Rows loaded via JS -->
             </tbody>
         </table>
     </div>
 
 </div>
 
-<!-- Contextual Toast Notification -->
-<div id="toast"
-    class="hidden fixed bottom-5 right-5 bg-green-500 text-white px-6 py-3 rounded shadow-lg z-50 transition-opacity duration-300">
-    Patient Saved
-</div>
-
 <!-- Add Patient Modal -->
-<div id="addPatientModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-40">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div class="mt-3 text-center">
-            <h3 class="text-lg leading-6 font-medium text-gray-900">Add New Patient</h3>
+<div id="addPatientModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-8 border w-[600px] shadow-2xl rounded-lg bg-white">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-2xl font-bold text-gray-800" id="modalTitle">Add New Patient</h3>
+            <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+        </div>
 
-            <!-- Error Alert -->
+        <form id="addPatientForm">
+            <input type="hidden" id="editingId">
+            <!-- Modal Error Alert -->
             <div id="modalError"
-                class="hidden mt-2 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
-                role="alert">
+                class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
+                <strong class="font-bold">Error!</strong>
                 <span class="block sm:inline" id="modalErrorMessage"></span>
             </div>
 
-            <form id="addPatientForm" class="mt-4 text-left">
-                <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="name">Name</label>
-                    <input
-                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                        id="name" type="text" required>
+            <div class="grid grid-cols-2 gap-6 mb-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2">First Name <span
+                            class="text-red-500">*</span></label>
+                    <input type="text" id="firstName" required
+                        class="w-full bg-yellow-50 border border-yellow-200 rounded-md py-3 px-4 text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 font-medium">
                 </div>
-                <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="dob">DOB</label>
-                    <input
-                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                        id="dob" type="date" required>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Last Name <span
+                            class="text-red-500">*</span></label>
+                    <input type="text" id="lastName" required
+                        class="w-full bg-yellow-50 border border-yellow-200 rounded-md py-3 px-4 text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 font-medium">
                 </div>
-                <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="chart_number">Chart Number</label>
-                    <input
-                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                        id="chart_number" type="text" required>
+            </div>
+
+            <div class="grid grid-cols-2 gap-6 mb-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Date of Birth <span
+                            class="text-red-500">*</span></label>
+                    <input type="date" id="dob" required
+                        class="w-full bg-yellow-50 border border-yellow-200 rounded-md py-3 px-4 text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 font-medium">
                 </div>
-                <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="phone">Phone</label>
-                    <input
-                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                        id="phone" type="text">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Phone Number <span
+                            class="text-red-500">*</span></label>
+                    <input type="tel" id="phone" required
+                        class="w-full bg-yellow-50 border border-yellow-200 rounded-md py-3 px-4 text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 font-medium">
                 </div>
-                <div class="flex items-center justify-between mt-6">
-                    <button type="button" onclick="closeModal()"
-                        class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
-                        Cancel
-                    </button>
-                    <button type="submit"
-                        class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
-                        Save
-                    </button>
-                </div>
-            </form>
-        </div>
+            </div>
+
+            <div class="mb-6">
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Address</label>
+                <input type="text" id="address"
+                    class="w-full bg-yellow-50 border border-yellow-200 rounded-md py-3 px-4 text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 font-medium">
+            </div>
+
+            <div class="mb-6">
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Chart Number (Auto-assigned if
+                    empty)</label>
+                <!-- Making it readonly or auto-gen in backend is better, but MVP allows input -->
+                <input type="text" id="chart_number" placeholder="CH-XXXX" required
+                    class="w-full bg-gray-50 border border-gray-200 rounded-md py-3 px-4 text-gray-500 focus:outline-none">
+            </div>
+
+            <div class="flex justify-end gap-3 pt-2">
+                <button type="button" onclick="closeModal()"
+                    class="px-6 py-3 font-bold text-gray-500 hover:text-gray-800 transition">Cancel</button>
+                <button type="submit"
+                    class="bg-teal-700 hover:bg-teal-800 text-white font-bold py-3 px-8 rounded-md shadow-md transition">Save
+                    Patient Record</button>
+            </div>
+        </form>
     </div>
 </div>
 
 <script>
-    function openModal() {
-        document.getElementById('addPatientModal').classList.remove('hidden');
-        document.getElementById('addPatientForm').reset();
-        document.getElementById('modalError').classList.add('hidden');
-    }
-
-    function closeModal() {
-        document.getElementById('addPatientModal').classList.add('hidden');
-    }
-
-    function showToast() {
-        const toast = document.getElementById('toast');
-        toast.classList.remove('hidden');
-        setTimeout(() => {
-            toast.classList.add('hidden');
-        }, 3000);
-    }
+    document.addEventListener('DOMContentLoaded', () => {
+        searchPatients();
+    });
 
     async function searchPatients() {
         const query = document.getElementById('searchInput').value;
@@ -129,36 +144,141 @@
         tbody.innerHTML = '';
 
         if (patients.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">No patients found.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-gray-500 font-medium">No patients found.</td></tr>';
             return;
         }
 
         patients.forEach(patient => {
             const row = `
-                <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${patient.name}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${patient.chart_number}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${patient.dob}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${patient.phone}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-blue-600 hover:text-blue-900 cursor-pointer">View</td>
+                <tr class="hover:bg-gray-50 transition border-b border-gray-50 last:border-b-0">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-500">${patient.chart_number}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 bg-yellow-50/50">${patient.name}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-medium">${patient.dob}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-medium">${patient.phone}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full bg-green-100 text-green-800">
+                            ${patient.status}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium relative">
+                        <button onclick="toggleActionMenu(${patient.id})" class="text-gray-400 hover:text-gray-600 font-bold text-xl px-2">⋮</button>
+                        <!-- Dropdown Menu -->
+                        <div id="menu-${patient.id}" class="hidden absolute right-0 mt-2 w-32 bg-white rounded-md shadow-lg z-10 border border-gray-100">
+                            <a href="#" onclick="openEditModal(${JSON.stringify(patient).replace(/"/g, '&quot;')}); toggleActionMenu(${patient.id}); return false;" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 font-bold text-left">Edit</a>
+                            <a href="#" onclick="deletePatient(${patient.id}); toggleActionMenu(${patient.id}); return false;" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-bold text-left">Delete</a>
+                        </div>
+                    </td>
                 </tr>
             `;
             tbody.innerHTML += row;
         });
     }
 
+    // Close menus when clicking outside
+    window.addEventListener('click', function (e) {
+        if (!e.target.matches('button')) {
+            document.querySelectorAll('[id^="menu-"]').forEach(menu => {
+                menu.classList.add('hidden');
+            });
+        }
+    });
+
+    function toggleActionMenu(id) {
+        // Close others
+        document.querySelectorAll('[id^="menu-"]').forEach(menu => {
+            if (menu.id !== `menu-${id}`) menu.classList.add('hidden');
+        });
+        const menu = document.getElementById(`menu-${id}`);
+        menu.classList.toggle('hidden');
+        event.stopPropagation();
+    }
+
+    function resetSearch() {
+        document.getElementById('searchInput').value = '';
+        searchPatients();
+    }
+
+    function openModal() {
+        document.getElementById('addPatientModal').classList.remove('hidden');
+        document.getElementById('modalTitle').textContent = "Add New Patient";
+        document.getElementById('addPatientForm').reset();
+        document.getElementById('editingId').value = ''; // Clear ID
+        document.getElementById('chart_number').value = 'CH-' + Math.floor(Math.random() * 10000);
+    }
+
+    function openEditModal(patient) {
+        document.getElementById('addPatientModal').classList.remove('hidden');
+        document.getElementById('modalTitle').textContent = "Edit Patient";
+
+        // Split Name roughly
+        const parts = patient.name.split(' ');
+        const first = parts[0];
+        const last = parts.slice(1).join(' ');
+
+        document.getElementById('firstName').value = first;
+        document.getElementById('lastName').value = last;
+        document.getElementById('dob').value = patient.dob;
+        document.getElementById('phone').value = patient.phone;
+        document.getElementById('address').value = patient.address || '';
+        document.getElementById('chart_number').value = patient.chart_number;
+
+        document.getElementById('editingId').value = patient.id;
+    }
+
+    function closeModal() {
+        document.getElementById('addPatientModal').classList.add('hidden');
+        document.getElementById('modalError').classList.add('hidden');
+    }
+
+    async function deletePatient(id) {
+        if (!confirm("Are you sure you want to delete this patient? This will also delete their appointments and invoices.")) return;
+
+        const response = await fetch(`/patients/${id}`, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            showToast("Patient deleted.");
+            searchPatients();
+        } else {
+            alert("Error deleting patient");
+        }
+    }
+
+    // Close modal on outside click
+    window.onclick = function (event) {
+        if (event.target == document.getElementById('addPatientModal')) {
+            closeModal();
+        }
+    }
+
+    // Toast notification function (simple version)
+    function showToast(msg) {
+        const div = document.createElement('div');
+        div.className = 'fixed bottom-5 right-5 bg-green-600 text-white px-6 py-3 rounded shadow-lg z-50 animate-bounce';
+        div.innerHTML = `<strong>Success!</strong> ${msg || 'Saved successfully.'}`;
+        document.body.appendChild(div);
+        setTimeout(() => div.remove(), 3000);
+    }
+
     document.getElementById('addPatientForm').addEventListener('submit', async function (e) {
         e.preventDefault();
 
+        const editingId = document.getElementById('editingId').value;
+        const method = editingId ? 'PUT' : 'POST';
+        const url = editingId ? `/patients/${editingId}` : '/patients/add';
+
         const data = {
-            name: document.getElementById('name').value,
+            first_name: document.getElementById('firstName').value,
+            last_name: document.getElementById('lastName').value,
             dob: document.getElementById('dob').value,
             chart_number: document.getElementById('chart_number').value,
-            phone: document.getElementById('phone').value
+            phone: document.getElementById('phone').value,
+            address: document.getElementById('address').value
         };
 
-        const response = await fetch('/patients/add', {
-            method: 'POST',
+        const response = await fetch(url, {
+            method: method,
             headers: {
                 'Content-Type': 'application/json',
             },
@@ -169,7 +289,7 @@
 
         if (response.ok) {
             closeModal();
-            showToast();
+            showToast(result.message);
             searchPatients(); // Refresh list
         } else {
             const errorDiv = document.getElementById('modalError');
@@ -178,9 +298,5 @@
             errorDiv.classList.remove('hidden');
         }
     });
-
-    // Initial load
-    searchPatients();
-
 </script>
 {% endblock %}

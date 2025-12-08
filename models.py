@@ -18,6 +18,8 @@ class Patient(db.Model):
     dob = db.Column(db.Date, nullable=False)
     chart_number = db.Column(db.String(20), unique=True, nullable=False)
     phone = db.Column(db.String(20), nullable=False)
+    address = db.Column(db.String(200), nullable=True)
+    status = db.Column(db.String(20), default='Active', nullable=False)
 
     def __repr__(self):
         return f'<Patient {self.name}>'
@@ -29,10 +31,11 @@ class Appointment(db.Model):
     date = db.Column(db.Date, nullable=False)
     time = db.Column(db.Time, nullable=False)
     status = db.Column(db.String(20), default='Scheduled', nullable=False)
+    visit_type = db.Column(db.String(50), default='General Checkup', nullable=False)
     reason = db.Column(db.String(255), nullable=True)
     
     staff = db.relationship('Staff', backref=db.backref('appointments', lazy=True))
-    patient = db.relationship('Patient', backref=db.backref('appointments', lazy=True))
+    patient = db.relationship('Patient', backref=db.backref('appointments', lazy=True, cascade="all, delete-orphan"))
 
     def __repr__(self):
         return f'<Appointment {self.id} - {self.status}>'
@@ -45,7 +48,7 @@ class Invoice(db.Model):
     total_amount = db.Column(db.Float, nullable=False)
     paid_amount = db.Column(db.Float, default=0.0, nullable=False)
 
-    patient = db.relationship('Patient', backref=db.backref('invoices', lazy=True))
+    patient = db.relationship('Patient', backref=db.backref('invoices', lazy=True, cascade="all, delete-orphan"))
 
     @property
     def balance_due(self):
