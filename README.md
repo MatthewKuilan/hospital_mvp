@@ -1,31 +1,49 @@
 # MediCore Hospital Management System
 
-A lightweight, modern Hospital Management System built with **Flask** (Python) and **Tailwind CSS**.
+A modern, full-featured Hospital Management System built with **Flask** (Python) and **Tailwind CSS**.
 
 ---
 
 ## ✨ Features
 
 ### 🏥 Patient Management
-- **Search**: Real-time search by Name, Chart Number, or Phone
-- **CRUD**: Create, Read, Update, Delete patient records
-- **Validation**: Strict phone number validation (10-15 digits)
-- **Registration Date**: Track when patients were registered
-- **Status Tracking**: Visual badges for patient status (Active/Inactive)
+- **Real-time Search**: Filter by Name, Chart Number, or Phone
+- **CRUD Operations**: Create, Read, Update, Delete patient records
+- **Validation**: Phone number validation (10-15 digits), required fields
+- **Confirmation Dialogs**: "Are you sure?" modals before destructive actions
 
 ### 📅 Appointment Scheduling
-- **Visual Calendar**: Interactive provider schedule with time slots
-- **Date Navigation**: Arrow buttons (`<` `>`) to navigate between days
-- **Calendar Picker**: Click the date to open a calendar picker
-- **Conflict Detection**: Prevents double-booking with alert banners
-- **Status Updates**: Mark appointments as Completed, Canceled (with reason), or Scheduled
-- **Visit Types**: Track Consults, Checkups, Follow-ups, Lab Work, etc.
+- **Visual Calendar**: Interactive weekly schedule with time slots
+- **Date Navigation**: Arrow buttons to browse days
+- **Conflict Detection**: Prevents double-booking
+- **Status Updates**: Mark as Completed, Canceled, or Scheduled
+- **Visit Types**: Consults, Checkups, Follow-ups, Lab Work, etc.
 
 ### 💰 Billing & Invoicing
+- **Advanced Filters**: Filter by status (Open/Partial/Paid) and date range
+- **Sortable Columns**: Click headers to sort by any column
 - **Line Items**: Create detailed invoices with multiple items
-- **Auto-Calculation**: Automatic totaling of quantity × unit price
-- **Payments**: Record partial or full payments
-- **Status Tracking**: OPEN, PARTIAL, PAID status badges
+- **Payment Tracking**: Record partial or full payments
+- **Print Invoice**: Client-side printing support
+
+### 📊 Reports & Analytics
+- **Monthly Revenue**: Bar chart showing 6-month revenue trends
+- **Patient Growth**: Line chart of new registrations
+- **Appointment Analytics**: Status breakdown, cancellation rate
+- **Busiest Times**: Charts showing peak hours and days
+- **Print Report**: One-click printing
+
+### 📋 Medical Records
+- **Visit Notes**: SOAP format (Subjective, Objective, Assessment, Plan)
+- **Vitals Tracking**: Blood pressure, pulse, temperature, weight
+- **Prescriptions**: Medication tracking with dosage, refills, status
+- **Documents**: Upload tracking for lab results, X-rays, consent forms
+
+### 🔍 Global Features
+- **Global Search**: Search patients, invoices, appointments from anywhere
+- **Keyboard Shortcut**: Press `Cmd+K` (Mac) or `Ctrl+K` (Windows) to search
+- **Confirmation Dialogs**: Styled modals for all destructive actions
+- **Responsive Design**: Clean, professional UI with Tailwind CSS
 
 ---
 
@@ -33,51 +51,27 @@ A lightweight, modern Hospital Management System built with **Flask** (Python) a
 
 ### Prerequisites
 - **Python 3.8+** — [Download Python](https://www.python.org/downloads/)
-- **Git** — [Download Git](https://git-scm.com/downloads)
 
-### Step 1: Clone the Repository
+### Quick Start
 
 ```bash
+# 1. Clone the repository
 git clone https://github.com/MatthewKuilan/hospital_mvp.git
 cd hospital_mvp
-```
 
-### Step 2: Set Up Virtual Environment (Recommended)
-
-**Mac/Linux:**
-```bash
+# 2. Create virtual environment (recommended)
 python3 -m venv venv
-source venv/bin/activate
-```
+source venv/bin/activate  # Mac/Linux
+# OR: venv\Scripts\activate  # Windows
 
-**Windows:**
-```bash
-python -m venv venv
-venv\Scripts\activate
-```
-
-### Step 3: Install Dependencies
-
-```bash
+# 3. Install dependencies
 pip install -r requirements.txt
-```
 
-### Step 4: Run the Application
-
-```bash
+# 4. Run the application
 python3 app.py
 ```
 
-You should see:
-```
-Database URI: sqlite:///...hms.db
-* Serving Flask app 'app'
-* Running on http://127.0.0.1:8000
-```
-
-### Step 5: Open in Browser
-
-Navigate to: **http://127.0.0.1:8000**
+Open in browser: **http://127.0.0.1:8000**
 
 ---
 
@@ -87,31 +81,41 @@ Navigate to: **http://127.0.0.1:8000**
 |----------|----------|------|
 | `staff1` | `Pass123` | Admin |
 
-*Other providers (Dr. Sarah Johnson, Dr. Michael Chen, Dr. Emily Rodriguez) also use `Pass123`*
-
 ---
 
-## 📋 Quick Start Guide
+## 📁 Project Structure
 
-1. **Login** with `staff1` / `Pass123`
-2. **Dashboard**: View daily stats and recent activity
-3. **Patients**: Add and manage patient records
-4. **Appointments**: Schedule and manage appointments
-5. **Billing**: Create invoices and track payments
+```
+MediCore/
+├── app.py              # Main Flask application & routes
+├── models.py           # SQLAlchemy database models
+├── requirements.txt    # Python dependencies
+├── hms.db              # SQLite database (auto-created)
+└── templates/
+    ├── base.html       # Base template with sidebar & global search
+    ├── login.html      # Authentication page
+    ├── dashboard.html  # Stats, charts, notifications
+    ├── patients.html   # Patient management
+    ├── schedule.html   # Appointment calendar
+    ├── billing.html    # Invoice management with filters
+    ├── reports.html    # Analytics & charts
+    └── records.html    # Medical records viewer
+```
 
 ---
 
 ## 🗄️ Database
 
-- **Type**: SQLite (file-based, no setup required)
+- **Type**: SQLite (no setup required)
 - **Location**: `hms.db` in project root
-- **Auto-Setup**: Database is created automatically on first run
+- **Auto-Setup**: Created and seeded on first run
 
 ### Reset Database
 
-To wipe all data and restore sample data:
-- Visit: `http://127.0.0.1:8000/reset-db`
-- Or delete `hms.db` and restart the server
+Click **Reset Database** in the sidebar (requires confirmation) or:
+```bash
+rm hms.db && python3 app.py
+```
 
 ---
 
@@ -119,52 +123,26 @@ To wipe all data and restore sample data:
 
 ### Port Already in Use
 ```bash
-# Mac/Linux
 lsof -ti:8000 | xargs kill -9
-
-# Then restart
 python3 app.py
 ```
 
-### Python Command Not Found
-- Use `python3` instead of `python` on Mac/Linux
-- Ensure Python is added to PATH
-
 ### Changes Not Showing
-- Hard refresh: `Cmd+Shift+R` (Mac) or `Ctrl+Shift+R` (Windows/Linux)
+- Hard refresh: `Cmd+Shift+R` (Mac) or `Ctrl+Shift+R` (Windows)
 - Restart the Flask server
 
 ---
 
-## 📁 Project Structure
+## 📝 Version History
 
-```
-hospital_mvp/
-├── app.py              # Main Flask application
-├── models.py           # Database models
-├── requirements.txt    # Python dependencies
-├── hms.db              # SQLite database (auto-created)
-├── README.md           # This file
-└── templates/
-    ├── base.html       # Base template with sidebar
-    ├── login.html      # Login page
-    ├── dashboard.html  # Main dashboard
-    ├── patients.html   # Patient management
-    ├── schedule.html   # Appointment scheduling
-    └── billing.html    # Invoice management
-```
-
----
-
-## 📝 Recent Changes
-
-### Version 1.1 (Dec 13, 2025)
-- ✅ Fixed date navigation arrows (`<` `>`) in Appointments
-- ✅ Added calendar picker icon for date selection
-- ✅ Fixed date display timezone issue
-- ✅ Added distinct provider names (Dr. Sarah Johnson, Dr. Michael Chen, etc.)
-- ✅ Added Registration Date field to Patient modal
-- ✅ Improved phone number validation
+### Version 2.0 (December 13, 2025)
+- ✅ **Dashboard Enhancements**: Revenue chart, notifications dropdown
+- ✅ **Reports Page**: Monthly revenue, patient growth, appointment analytics
+- ✅ **Medical Records**: Visit notes (SOAP), prescriptions, documents
+- ✅ **Global Search**: Search anywhere with Cmd+K shortcut
+- ✅ **Advanced Filters**: Billing page status/date filters
+- ✅ **Sortable Tables**: Click column headers to sort
+- ✅ **Confirmation Dialogs**: Styled modals for destructive actions
 
 ### Version 1.0
 - Initial release with Patient, Scheduling, and Billing modules
