@@ -111,12 +111,19 @@
                     class="w-full bg-yellow-50 border border-yellow-200 rounded-md py-3 px-4 text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 font-medium">
             </div>
 
-            <div class="mb-6">
-                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Chart Number (Auto-assigned if
-                    empty)</label>
-                <!-- Making it readonly or auto-gen in backend is better, but MVP allows input -->
-                <input type="text" id="chart_number" placeholder="CH-XXXX" required
-                    class="w-full bg-gray-50 border border-gray-200 rounded-md py-3 px-4 text-gray-500 focus:outline-none">
+            <div class="grid grid-cols-2 gap-6 mb-6">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Registration Date & Time</label>
+                    <input type="datetime-local" id="registrationDate"
+                        class="w-full bg-yellow-50 border border-yellow-200 rounded-md py-3 px-4 text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 font-medium">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Chart Number (Auto-assigned if
+                        empty)</label>
+                    <!-- Making it readonly or auto-gen in backend is better, but MVP allows input -->
+                    <input type="text" id="chart_number" placeholder="CH-XXXX" required
+                        class="w-full bg-gray-50 border border-gray-200 rounded-md py-3 px-4 text-gray-500 focus:outline-none">
+                </div>
             </div>
 
             <div class="flex justify-end gap-3 pt-2">
@@ -221,6 +228,7 @@
         document.getElementById('phone').value = patient.phone;
         document.getElementById('address').value = patient.address || '';
         document.getElementById('chart_number').value = patient.chart_number;
+        document.getElementById('registrationDate').value = patient.registration_date ? patient.registration_date.slice(0, 16) : '';
 
         document.getElementById('editingId').value = patient.id;
     }
@@ -274,7 +282,8 @@
             dob: document.getElementById('dob').value,
             chart_number: document.getElementById('chart_number').value,
             phone: document.getElementById('phone').value,
-            address: document.getElementById('address').value
+            address: document.getElementById('address').value,
+            registration_date: document.getElementById('registrationDate').value
         };
 
         const response = await fetch(url, {

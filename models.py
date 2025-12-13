@@ -20,6 +20,7 @@ class Patient(db.Model):
     phone = db.Column(db.String(20), nullable=False)
     address = db.Column(db.String(200), nullable=True)
     status = db.Column(db.String(20), default='Active', nullable=False)
+    registration_date = db.Column(db.DateTime, nullable=True)  # When patient was registered
 
     def __repr__(self):
         return f'<Patient {self.name}>'

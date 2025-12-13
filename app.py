@@ -49,9 +49,11 @@ def initialize_database():
 def seed_data():
     if Staff.query.first():
         return
-    # Staff
-    staff1 = Staff(username='staff1', password='Pass123', role='Doctor')
-    staff2 = Staff(username='Dr. Smith', password='Pass123', role='Doctor') # Password wasn't specified but needed for model
+    # Staff - Distinct doctor names (staff1 is the login account)
+    staff1 = Staff(username='staff1', password='Pass123', role='Admin')
+    staff2 = Staff(username='Dr. Sarah Johnson', password='Pass123', role='Doctor')
+    staff3 = Staff(username='Dr. Michael Chen', password='Pass123', role='Doctor')
+    staff4 = Staff(username='Dr. Emily Rodriguez', password='Pass123', role='Nurse Practitioner')
     
     # Patients
     patient1 = Patient(name='Alex Lee', dob=date(1999, 1, 20), chart_number='CH-1001', phone='555-0101', address='123 Maple Dr, NY', status='Active')
@@ -61,6 +63,8 @@ def seed_data():
     # Commit first to get IDs
     db.session.add(staff1)
     db.session.add(staff2)
+    db.session.add(staff3)
+    db.session.add(staff4)
     db.session.add(patient1)
     db.session.add(patient2)
     db.session.commit()
@@ -182,7 +186,8 @@ def patients_search():
         'chart_number': p.chart_number,
         'phone': p.phone,
         'address': p.address,
-        'status': p.status
+        'status': p.status,
+        'registration_date': p.registration_date.isoformat() if p.registration_date else None
     } for p in patients])
 
 @app.route('/patients/add', methods=['POST'])
@@ -214,13 +219,18 @@ def patients_add():
          return jsonify({'error': 'Name is required'}), 400
     
     try:
+        reg_date = None
+        if data.get('registration_date'):
+            reg_date = datetime.strptime(data['registration_date'], '%Y-%m-%dT%H:%M')
+        
         new_patient = Patient(
             name=full_name,
             dob=datetime.strptime(data['dob'], '%Y-%m-%d').date(),
             chart_number=data['chart_number'],
             phone=data['phone'],
             address=data.get('address'),
-            status='Active'
+            status='Active',
+            registration_date=reg_date
         )
         db.session.add(new_patient)
         db.session.commit()
@@ -254,6 +264,9 @@ def patients_update(id):
     patient.phone = data.get('phone', patient.phone)
     patient.address = data.get('address', patient.address)
     patient.chart_number = data.get('chart_number', patient.chart_number)
+    
+    if data.get('registration_date'):
+        patient.registration_date = datetime.strptime(data['registration_date'], '%Y-%m-%dT%H:%M')
     
     try:
         db.session.commit()

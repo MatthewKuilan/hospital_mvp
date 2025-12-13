@@ -19,7 +19,7 @@
             <select id="staffSelect" onchange="loadAppointments()"
                 class="block w-full border border-gray-300 rounded px-3 py-2 text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500">
                 {% for s in staff %}
-                <option value="{{ s.id }}">{{ s.name }} ({{ s.role }})</option>
+                <option value="{{ s.id }}">{{ s.username }} ({{ s.role }})</option>
                 {% endfor %}
             </select>
         </div>
@@ -29,10 +29,18 @@
                 class="block w-full border border-gray-300 rounded px-3 py-2 text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500">
         </div>
         <div class="flex-grow flex justify-end items-center text-gray-500 font-medium">
-            <!-- Date navigator mock -->
-            <button class="p-2 hover:bg-gray-100 rounded">&lt;</button>
-            <span class="mx-2" id="displayDate">Dec 1, 2025</span>
-            <button class="p-2 hover:bg-gray-100 rounded">&gt;</button>
+            <!-- Date navigator - Now functional -->
+            <button onclick="changeDate(-1)" class="p-2 hover:bg-gray-100 rounded text-xl font-bold">&lt;</button>
+            <span class="mx-3 cursor-pointer hover:text-teal-600 flex items-center gap-2"
+                onclick="document.getElementById('dateSelect').showPicker()">
+                <span id="displayDate">Dec 1, 2025</span>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z">
+                    </path>
+                </svg>
+            </span>
+            <button onclick="changeDate(1)" class="p-2 hover:bg-gray-100 rounded text-xl font-bold">&gt;</button>
         </div>
     </div>
 
@@ -149,16 +157,42 @@
 </div>
 
 <script>
+    // Format date string without timezone issues
+    function formatDateDisplay(dateStr) {
+        const [year, month, day] = dateStr.split('-').map(Number);
+        const d = new Date(year, month - 1, day);
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    // Change date by delta days (-1 for previous, +1 for next)
+    function changeDate(delta) {
+        const dateInput = document.getElementById('dateSelect');
+        const [year, month, day] = dateInput.value.split('-').map(Number);
+        const currentDate = new Date(year, month - 1, day);
+        currentDate.setDate(currentDate.getDate() + delta);
+
+        // Format back to YYYY-MM-DD
+        const newYear = currentDate.getFullYear();
+        const newMonth = String(currentDate.getMonth() + 1).padStart(2, '0');
+        const newDay = String(currentDate.getDate()).padStart(2, '0');
+        dateInput.value = `${newYear}-${newMonth}-${newDay}`;
+
+        // Update display and reload
+        document.getElementById('displayDate').textContent = formatDateDisplay(dateInput.value);
+        loadAppointments();
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         loadPatients();
         loadAppointments();
 
-        // Date display
+        // Initial date display
         const dateInput = document.getElementById('dateSelect');
         const displaySpan = document.getElementById('displayDate');
-        displaySpan.textContent = new Date(dateInput.value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        displaySpan.textContent = formatDateDisplay(dateInput.value);
+
         dateInput.addEventListener('change', (e) => {
-            displaySpan.textContent = new Date(e.target.value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            displaySpan.textContent = formatDateDisplay(e.target.value);
         });
     });
 

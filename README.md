@@ -2,78 +2,169 @@
 
 A lightweight, modern Hospital Management System built with **Flask** (Python) and **Tailwind CSS**.
 
-## Features
+---
+
+## ✨ Features
 
 ### 🏥 Patient Management
-- **Search**: Real-time searching by Name, Chart Number, or Phone.
-- **CRUD**: Full Create, Read, Update, Delete capabilities.
-- **Validation**: Strict validation for phone numbers (10-15 digits).
-- **Status Tracking**: Visual badges for patient status.
+- **Search**: Real-time search by Name, Chart Number, or Phone
+- **CRUD**: Create, Read, Update, Delete patient records
+- **Validation**: Strict phone number validation (10-15 digits)
+- **Registration Date**: Track when patients were registered
+- **Status Tracking**: Visual badges for patient status (Active/Inactive)
 
 ### 📅 Appointment Scheduling
-- **Visual Calendar**: Interactive provider schedule with "Blue Card" slots.
-- **Conflict Detection**: Prevents double-booking logic with alert banners.
-- **Status Updates**: Mark appointments as Completed, Canceled (with reason), or Scheduled.
-- **Visit Types**: Track Consults, Checkups, Follow-ups, etc.
+- **Visual Calendar**: Interactive provider schedule with time slots
+- **Date Navigation**: Arrow buttons (`<` `>`) to navigate between days
+- **Calendar Picker**: Click the date to open a calendar picker
+- **Conflict Detection**: Prevents double-booking with alert banners
+- **Status Updates**: Mark appointments as Completed, Canceled (with reason), or Scheduled
+- **Visit Types**: Track Consults, Checkups, Follow-ups, Lab Work, etc.
 
 ### 💰 Billing & Invoicing
-- **Invoices**: Create detailed invoices with multiple line items.
-- **Auto-Calculation**: Automatic totaling of quantity x unit price.
-- **Payments**: Record partial or full payments with status tracking (OPEN, PARTIAL, PAID).
-- **History**: View full billing history per patient.
+- **Line Items**: Create detailed invoices with multiple items
+- **Auto-Calculation**: Automatic totaling of quantity × unit price
+- **Payments**: Record partial or full payments
+- **Status Tracking**: OPEN, PARTIAL, PAID status badges
 
 ---
 
-## 🚀 Getting Started (Mac & Linux)
+## 🚀 Getting Started
 
 ### Prerequisites
-- **Python 3.8+**
-- **Git**
+- **Python 3.8+** — [Download Python](https://www.python.org/downloads/)
+- **Git** — [Download Git](https://git-scm.com/downloads)
 
-### Installation
+### Step 1: Clone the Repository
 
-1.  **Clone the Repository**
-    ```bash
-    git clone https://github.com/MatthewKuilan/hospital_mvp.git
-    cd hospital_mvp
-    ```
+```bash
+git clone https://github.com/MatthewKuilan/hospital_mvp.git
+cd hospital_mvp
+```
 
-2.  **Set Up Virtual Environment (Recommended)**
-    ```bash
-    python3 -m venv venv
-    source venv/bin/activate
-    ```
+### Step 2: Set Up Virtual Environment (Recommended)
 
-3.  **Install Dependencies**
-    ```bash
-    pip install -r requirements.txt
-    ```
+**Mac/Linux:**
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
 
-### Running the Application
+**Windows:**
+```bash
+python -m venv venv
+venv\Scripts\activate
+```
 
-1.  **Start the Server**
-    ```bash
-    python3 app.py
-    ```
-    *You should see output indicating the server is running on `http://127.0.0.1:8000`*
+### Step 3: Install Dependencies
 
-2.  **Access the App**
-    Open your web browser and navigate to:
-    **[http://127.0.0.1:8000](http://127.0.0.1:8000)**
+```bash
+pip install -r requirements.txt
+```
 
-### 🔑 Default Credentials
-Use these credentials to log in:
-- **Username**: `staff1`
-- **Password**: `Pass123`
+### Step 4: Run the Application
+
+```bash
+python3 app.py
+```
+
+You should see:
+```
+Database URI: sqlite:///...hms.db
+* Serving Flask app 'app'
+* Running on http://127.0.0.1:8000
+```
+
+### Step 5: Open in Browser
+
+Navigate to: **http://127.0.0.1:8000**
 
 ---
 
-## Database Management
-The application uses a local **SQLite** database (`hms.db`).
-- The database is automatically created and seeded with sample data on the first run.
-- **Reset Database**: To wipe all data and restore defaults, visit:
-  `http://127.0.0.1:8000/reset-db`
+## 🔑 Login Credentials
 
-## Troubleshooting
-- **Port In Use**: If port 8000 is busy, kill the process using standard tools (`lsof -ti:8000 | xargs kill -9`) or change the port in the `app.run` call in `app.py`.
-- **Python not found**: Ensure you are using `python3` command if `python` refers to legacy Python 2.7.
+| Username | Password | Role |
+|----------|----------|------|
+| `staff1` | `Pass123` | Admin |
+
+*Other providers (Dr. Sarah Johnson, Dr. Michael Chen, Dr. Emily Rodriguez) also use `Pass123`*
+
+---
+
+## 📋 Quick Start Guide
+
+1. **Login** with `staff1` / `Pass123`
+2. **Dashboard**: View daily stats and recent activity
+3. **Patients**: Add and manage patient records
+4. **Appointments**: Schedule and manage appointments
+5. **Billing**: Create invoices and track payments
+
+---
+
+## 🗄️ Database
+
+- **Type**: SQLite (file-based, no setup required)
+- **Location**: `hms.db` in project root
+- **Auto-Setup**: Database is created automatically on first run
+
+### Reset Database
+
+To wipe all data and restore sample data:
+- Visit: `http://127.0.0.1:8000/reset-db`
+- Or delete `hms.db` and restart the server
+
+---
+
+## 🛠️ Troubleshooting
+
+### Port Already in Use
+```bash
+# Mac/Linux
+lsof -ti:8000 | xargs kill -9
+
+# Then restart
+python3 app.py
+```
+
+### Python Command Not Found
+- Use `python3` instead of `python` on Mac/Linux
+- Ensure Python is added to PATH
+
+### Changes Not Showing
+- Hard refresh: `Cmd+Shift+R` (Mac) or `Ctrl+Shift+R` (Windows/Linux)
+- Restart the Flask server
+
+---
+
+## 📁 Project Structure
+
+```
+hospital_mvp/
+├── app.py              # Main Flask application
+├── models.py           # Database models
+├── requirements.txt    # Python dependencies
+├── hms.db              # SQLite database (auto-created)
+├── README.md           # This file
+└── templates/
+    ├── base.html       # Base template with sidebar
+    ├── login.html      # Login page
+    ├── dashboard.html  # Main dashboard
+    ├── patients.html   # Patient management
+    ├── schedule.html   # Appointment scheduling
+    └── billing.html    # Invoice management
+```
+
+---
+
+## 📝 Recent Changes
+
+### Version 1.1 (Dec 13, 2025)
+- ✅ Fixed date navigation arrows (`<` `>`) in Appointments
+- ✅ Added calendar picker icon for date selection
+- ✅ Fixed date display timezone issue
+- ✅ Added distinct provider names (Dr. Sarah Johnson, Dr. Michael Chen, etc.)
+- ✅ Added Registration Date field to Patient modal
+- ✅ Improved phone number validation
+
+### Version 1.0
+- Initial release with Patient, Scheduling, and Billing modules
