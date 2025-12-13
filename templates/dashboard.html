@@ -10,9 +10,49 @@
             <p class="text-gray-500">Here's what's happening today.</p>
         </div>
         <div class="flex items-center space-x-4">
-            <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">Logged in as: {{
-                current_user.username }}</span>
-            <a href="{{ url_for('logout') }}" class="text-gray-600 hover:text-red-500 text-sm font-medium">Logout</a>
+            <!-- Quick Action Buttons -->
+            <a href="{{ url_for('patients') }}"
+                class="bg-teal-600 hover:bg-teal-700 text-white font-medium py-2 px-4 rounded-lg shadow-sm flex items-center gap-2 transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                New Patient
+            </a>
+            <a href="{{ url_for('appointments_view') }}"
+                class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg shadow-sm flex items-center gap-2 transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z">
+                    </path>
+                </svg>
+                New Appointment
+            </a>
+
+            <!-- Notification Bell -->
+            <button class="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9">
+                    </path>
+                </svg>
+                {% if pending_invoices > 0 %}
+                <span
+                    class="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-500 rounded-full">
+                    {{ pending_invoices }}
+                </span>
+                {% endif %}
+            </button>
+
+            <!-- User Badge & Logout -->
+            <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">{{ current_user.username
+                }}</span>
+            <a href="{{ url_for('logout') }}" class="text-gray-500 hover:text-red-500 transition" title="Logout">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1">
+                    </path>
+                </svg>
+            </a>
         </div>
     </div>
 
@@ -20,36 +60,70 @@
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
 
         <!-- Card 1: Today's Appointments -->
-        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+        <div class="bg-gradient-to-br from-teal-500 to-teal-600 p-6 rounded-xl shadow-lg text-white hover:shadow-xl transition-shadow cursor-pointer"
+            onclick="window.location='{{ url_for('appointments_view') }}'">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-gray-500 text-sm font-medium uppercase tracking-wider">Today's Appts</h3>
-                <span class="bg-teal-100 text-teal-800 text-xs px-2 py-1 rounded-full">{{ today }}</span>
+                <div class="p-3 bg-white/20 rounded-lg">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z">
+                        </path>
+                    </svg>
+                </div>
+                <span class="bg-white/20 text-xs px-2 py-1 rounded-full">{{ today }}</span>
             </div>
-            <p class="text-3xl font-bold text-gray-800">{{ appts_today }}</p>
+            <p class="text-4xl font-bold">{{ appts_today }}</p>
+            <p class="text-teal-100 text-sm mt-1">Today's Appointments</p>
         </div>
 
         <!-- Card 2: Total Patients -->
-        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-xl shadow-lg text-white hover:shadow-xl transition-shadow cursor-pointer"
+            onclick="window.location='{{ url_for('patients') }}'">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-gray-500 text-sm font-medium uppercase tracking-wider">Total Patients</h3>
+                <div class="p-3 bg-white/20 rounded-lg">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z">
+                        </path>
+                    </svg>
+                </div>
             </div>
-            <p class="text-3xl font-bold text-gray-800">{{ total_patients }}</p>
+            <p class="text-4xl font-bold">{{ total_patients }}</p>
+            <p class="text-blue-100 text-sm mt-1">Total Patients</p>
         </div>
 
         <!-- Card 3: Pending Invoices -->
-        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+        <div class="bg-gradient-to-br from-orange-500 to-orange-600 p-6 rounded-xl shadow-lg text-white hover:shadow-xl transition-shadow cursor-pointer"
+            onclick="window.location='{{ url_for('billing') }}'">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-gray-500 text-sm font-medium uppercase tracking-wider">Pending Invoices</h3>
+                <div class="p-3 bg-white/20 rounded-lg">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01">
+                        </path>
+                    </svg>
+                </div>
+                {% if pending_invoices > 0 %}
+                <span class="bg-white/20 text-xs px-2 py-1 rounded-full animate-pulse">Action Needed</span>
+                {% endif %}
             </div>
-            <p class="text-3xl font-bold text-gray-800">{{ pending_invoices }}</p>
+            <p class="text-4xl font-bold">{{ pending_invoices }}</p>
+            <p class="text-orange-100 text-sm mt-1">Pending Invoices</p>
         </div>
 
         <!-- Card 4: Total Staff -->
-        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+        <div
+            class="bg-gradient-to-br from-purple-500 to-purple-600 p-6 rounded-xl shadow-lg text-white hover:shadow-xl transition-shadow">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-gray-500 text-sm font-medium uppercase tracking-wider">Total Staff</h3>
+                <div class="p-3 bg-white/20 rounded-lg">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                </div>
             </div>
-            <p class="text-3xl font-bold text-gray-800">{{ total_staff }}</p>
+            <p class="text-4xl font-bold">{{ total_staff }}</p>
+            <p class="text-purple-100 text-sm mt-1">Total Staff</p>
         </div>
     </div>
 
