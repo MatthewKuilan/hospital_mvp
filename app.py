@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, render_template, request, redirect, url_for, flash
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from sqlalchemy import or_
-from models import db, Staff, Patient, Appointment, Invoice, InvoiceItem
+from models import db, Staff, Patient, Appointment, Invoice, InvoiceItem, Payment
 from datetime import date, time, datetime
 import os
 
@@ -491,6 +491,15 @@ def invoices_details(id):
         'total': item.total
     } for item in invoice.items]
     
+    # Payment history
+    payments_data = [{
+        'id': p.id,
+        'amount': p.amount,
+        'date': p.payment_date.strftime('%Y-%m-%d %H:%M') if p.payment_date else None,
+        'method': p.payment_method,
+        'reference': p.reference
+    } for p in invoice.payments]
+    
     return jsonify({
         'id': invoice.id,
         'date': invoice.date_issued.strftime('%Y-%m-%d'),
@@ -500,7 +509,8 @@ def invoices_details(id):
         'total': invoice.total_amount,
         'paid': invoice.paid_amount,
         'balance': invoice.balance_due,
-        'items': items_data
+        'items': items_data,
+        'payments': payments_data
     })
 
 @app.route('/invoices/<int:id>/pay', methods=['POST'])
@@ -508,25 +518,35 @@ def invoices_details(id):
 def invoices_pay(id):
     data = request.get_json()
     amount = float(data.get('amount', 0))
+    payment_method = data.get('payment_method', 'Cash')
+    reference = data.get('reference', '')
     
     if amount <= 0:
         return jsonify({'error': 'Invalid payment amount'}), 400
         
     invoice = Invoice.query.get_or_404(id)
     
-    # Update logic
+    # Create payment record
+    payment = Payment(
+        invoice_id=id,
+        amount=amount,
+        payment_method=payment_method,
+        reference=reference
+    )
+    db.session.add(payment)
+    
+    # Update invoice totals
     invoice.paid_amount += amount
     balance = invoice.total_amount - invoice.paid_amount
     
     if balance <= 0:
         invoice.status = 'PAID'
         badge_color = 'green'
-        # Optional: handle overpayment logic (set balance to 0 in display, or store negative balance)
     elif invoice.paid_amount > 0:
         invoice.status = 'PARTIAL'
         badge_color = 'orange'
     else:
-        invoice.status = 'OPEN' # Should not happen if amount > 0
+        invoice.status = 'OPEN'
         badge_color = 'blue'
         
     db.session.commit()
@@ -535,7 +555,8 @@ def invoices_pay(id):
         'message': 'Payment Recorded',
         'new_balance': max(0.0, balance),
         'new_status': invoice.status,
-        'badge_color': badge_color
+        'badge_color': badge_color,
+        'payment_id': payment.id
     })
 
 if __name__ == '__main__':

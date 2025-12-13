@@ -70,3 +70,16 @@ class InvoiceItem(db.Model):
     @property
     def total(self):
         return self.qty * self.unit_price
+
+class Payment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    invoice_id = db.Column(db.Integer, db.ForeignKey('invoice.id'), nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    payment_date = db.Column(db.DateTime, default=db.func.now())
+    payment_method = db.Column(db.String(50), default='Cash')  # Cash, Card, Insurance, etc.
+    reference = db.Column(db.String(100))  # Transaction ID, check number, etc.
+    
+    invoice = db.relationship('Invoice', backref=db.backref('payments', lazy=True, cascade="all, delete-orphan"))
+    
+    def __repr__(self):
+        return f'<Payment ${self.amount} on {self.payment_date}>'
