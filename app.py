@@ -19,6 +19,30 @@ login_manager.login_view = 'login'
 def load_user(user_id):
     return Staff.query.get(int(user_id))
 
+# Global Error Handlers
+@app.errorhandler(404)
+def not_found_error(error):
+    if request.path.startswith('/api/') or request.is_json or request.headers.get('Accept') == 'application/json':
+        return jsonify({'error': 'Resource not found', 'status': 404}), 404
+    return render_template('errors/404.html'), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    db.session.rollback()  # Rollback any failed transactions
+    if request.path.startswith('/api/') or request.is_json or request.headers.get('Accept') == 'application/json':
+        return jsonify({'error': 'Internal server error', 'status': 500}), 500
+    return render_template('errors/500.html'), 500
+
+@app.errorhandler(403)
+def forbidden_error(error):
+    if request.path.startswith('/api/') or request.is_json:
+        return jsonify({'error': 'Access forbidden', 'status': 403}), 403
+    return render_template('errors/403.html'), 403
+
+@app.errorhandler(400)
+def bad_request_error(error):
+    return jsonify({'error': 'Bad request', 'status': 400}), 400
+
 print(f"Database URI: {app.config['SQLALCHEMY_DATABASE_URI']}")
 print(f"CWD: {os.getcwd()}")
 
@@ -403,27 +427,35 @@ def appointments_create():
 @app.route('/appointments/<int:id>/status', methods=['POST'])
 @login_required
 def appointments_status(id):
-    appt = Appointment.query.get_or_404(id)
-    data = request.get_json()
-    
-    new_status = data.get('status')
-    reason = data.get('reason')
-    
-    if new_status:
+    try:
+        appt = Appointment.query.get_or_404(id)
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+        
+        new_status = data.get('status')
+        reason = data.get('reason')
+        
+        if not new_status:
+            return jsonify({'error': 'Status is required'}), 400
+            
+        valid_statuses = ['Scheduled', 'Completed', 'Canceled']
+        if new_status not in valid_statuses:
+            return jsonify({'error': f'Invalid status. Must be one of: {", ".join(valid_statuses)}'}), 400
+        
+        if new_status == 'Canceled' and not reason:
+            return jsonify({'error': 'Reason required for cancellation'}), 400
+        
         appt.status = new_status
         if new_status == 'Canceled':
-             if not reason:
-                 return jsonify({'error': 'Reason required for cancellation'}), 400
-             appt.reason = reason
-        else:
-            # Clear reason if re-scheduled or completed?
-            # Ideally keep reason history, but for simple MVP:
-            pass 
-            
+            appt.reason = reason
+                
         db.session.commit()
         return jsonify({'message': 'Status Updated'}), 200
-        
-    return jsonify({'error': 'Invalid status update'}), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/billing')
 @login_required
@@ -516,48 +548,69 @@ def invoices_details(id):
 @app.route('/invoices/<int:id>/pay', methods=['POST'])
 @login_required
 def invoices_pay(id):
-    data = request.get_json()
-    amount = float(data.get('amount', 0))
-    payment_method = data.get('payment_method', 'Cash')
-    reference = data.get('reference', '')
-    
-    if amount <= 0:
-        return jsonify({'error': 'Invalid payment amount'}), 400
+    try:
+        data = request.get_json()
         
-    invoice = Invoice.query.get_or_404(id)
-    
-    # Create payment record
-    payment = Payment(
-        invoice_id=id,
-        amount=amount,
-        payment_method=payment_method,
-        reference=reference
-    )
-    db.session.add(payment)
-    
-    # Update invoice totals
-    invoice.paid_amount += amount
-    balance = invoice.total_amount - invoice.paid_amount
-    
-    if balance <= 0:
-        invoice.status = 'PAID'
-        badge_color = 'green'
-    elif invoice.paid_amount > 0:
-        invoice.status = 'PARTIAL'
-        badge_color = 'orange'
-    else:
-        invoice.status = 'OPEN'
-        badge_color = 'blue'
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
         
-    db.session.commit()
-    
-    return jsonify({
-        'message': 'Payment Recorded',
-        'new_balance': max(0.0, balance),
-        'new_status': invoice.status,
-        'badge_color': badge_color,
-        'payment_id': payment.id
-    })
+        try:
+            amount = float(data.get('amount', 0))
+        except (TypeError, ValueError):
+            return jsonify({'error': 'Invalid payment amount format'}), 400
+            
+        payment_method = data.get('payment_method', 'Cash')
+        reference = data.get('reference', '')
+        
+        if amount <= 0:
+            return jsonify({'error': 'Payment amount must be greater than zero'}), 400
+        
+        # Validate payment method
+        valid_methods = ['Cash', 'Credit Card', 'Debit Card', 'Insurance', 'Check', 'Other']
+        if payment_method not in valid_methods:
+            payment_method = 'Other'
+            
+        invoice = Invoice.query.get_or_404(id)
+        
+        # Check if already paid
+        if invoice.status == 'PAID':
+            return jsonify({'error': 'Invoice is already fully paid'}), 400
+        
+        # Create payment record
+        payment = Payment(
+            invoice_id=id,
+            amount=amount,
+            payment_method=payment_method,
+            reference=reference
+        )
+        db.session.add(payment)
+        
+        # Update invoice totals
+        invoice.paid_amount += amount
+        balance = invoice.total_amount - invoice.paid_amount
+        
+        if balance <= 0:
+            invoice.status = 'PAID'
+            badge_color = 'green'
+        elif invoice.paid_amount > 0:
+            invoice.status = 'PARTIAL'
+            badge_color = 'orange'
+        else:
+            invoice.status = 'OPEN'
+            badge_color = 'blue'
+            
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Payment Recorded',
+            'new_balance': max(0.0, balance),
+            'new_status': invoice.status,
+            'badge_color': badge_color,
+            'payment_id': payment.id
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     # Using 'with app.app_context()' outside of request in main, or before_first_request (deprecated in newer Flask)

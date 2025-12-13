@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-[80vh] flex items-center justify-center bg-gray-50">
+    <div class="text-center px-6">
+        <!-- 500 Illustration -->
+        <div class="mb-8">
+            <svg class="mx-auto w-48 h-48 text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+                </path>
+            </svg>
+        </div>
+
+        <!-- Error Code -->
+        <h1 class="text-8xl font-bold text-red-500 mb-4">500</h1>
+
+        <!-- Message -->
+        <h2 class="text-2xl font-bold text-gray-800 mb-2">Server Error</h2>
+        <p class="text-gray-500 mb-8 max-w-md mx-auto">
+            Something went wrong on our end. Our team has been notified and we're working to fix it.
+        </p>
+
+        <!-- Actions -->
+        <div class="flex gap-4 justify-center">
+            <a href="{{ url_for('dashboard') }}"
+                class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-6 rounded-lg shadow transition">
+                Go to Dashboard
+            </a>
+            <button onclick="location.reload()"
+                class="bg-white border border-gray-300 text-gray-700 font-bold py-3 px-6 rounded-lg hover:bg-gray-50 transition">
+                Try Again
+            </button>
+        </div>
+
+        <!-- Support Info -->
+        <p class="mt-8 text-sm text-gray-400">
+            If this problem persists, please contact
+            <a href="mailto:support@medicore.com" class="text-teal-600 hover:underline">support@medicore.com</a>
+        </p>
+    </div>
+</div>
+{% endblock %}
