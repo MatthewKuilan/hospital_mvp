@@ -134,6 +134,38 @@
 
     <!-- Main Content Wrapper -->
     <div class="flex-1 flex flex-col ml-64 h-full overflow-y-auto">
+
+        <!-- Global Search Header -->
+        <div class="bg-white border-b border-gray-200 px-6 py-3 sticky top-0 z-20">
+            <div class="relative max-w-xl" id="globalSearchWrapper">
+                <div class="relative">
+                    <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    <input type="text" id="globalSearchInput" placeholder="Search patients, invoices, appointments..."
+                        class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                        autocomplete="off">
+                    <div id="searchSpinner" class="hidden absolute right-3 top-1/2 transform -translate-y-1/2">
+                        <svg class="animate-spin h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                            </circle>
+                            <path class="opacity-75" fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                            </path>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Search Results Dropdown -->
+                <div id="searchResults"
+                    class="hidden absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-xl border border-gray-100 max-h-96 overflow-y-auto z-50">
+                    <!-- Results populated by JS -->
+                </div>
+            </div>
+        </div>
+
         {% else %}
         <!-- Login Page Layout Wrapper -->
         <div class="flex-1 flex flex-col h-full overflow-y-auto">
@@ -158,6 +190,156 @@
             {% block content %}{% endblock %}
 
         </div>
+
+        {% if current_user.is_authenticated %}
+        <!-- Global Search Script -->
+        <script>
+            (function () {
+                const searchInput = document.getElementById('globalSearchInput');
+                const searchResults = document.getElementById('searchResults');
+                const searchSpinner = document.getElementById('searchSpinner');
+                let searchTimeout = null;
+
+                if (!searchInput) return;
+
+                searchInput.addEventListener('input', function () {
+                    const query = this.value.trim();
+
+                    clearTimeout(searchTimeout);
+
+                    if (query.length < 2) {
+                        searchResults.classList.add('hidden');
+                        return;
+                    }
+
+                    searchSpinner.classList.remove('hidden');
+
+                    searchTimeout = setTimeout(async () => {
+                        try {
+                            const response = await fetch(`/api/global-search?q=${encodeURIComponent(query)}`);
+                            const data = await response.json();
+
+                            renderResults(data, query);
+                        } catch (e) {
+                            console.error('Search error:', e);
+                        } finally {
+                            searchSpinner.classList.add('hidden');
+                        }
+                    }, 300);
+                });
+
+                function renderResults(data, query) {
+                    const hasResults = data.patients.length || data.invoices.length || data.appointments.length;
+
+                    if (!hasResults) {
+                        searchResults.innerHTML = `
+                    <div class="p-6 text-center text-gray-400">
+                        <svg class="w-10 h-10 mx-auto mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                        No results found for "${query}"
+                    </div>
+                `;
+                        searchResults.classList.remove('hidden');
+                        return;
+                    }
+
+                    let html = '';
+
+                    // Patients
+                    if (data.patients.length) {
+                        html += `<div class="p-2 border-b border-gray-100">
+                    <p class="px-2 py-1 text-xs font-bold text-gray-400 uppercase">Patients</p>`;
+                        data.patients.forEach(p => {
+                            html += `
+                    <a href="/patients" class="flex items-center gap-3 px-3 py-2 hover:bg-teal-50 rounded-lg cursor-pointer transition">
+                        <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-xs font-bold">
+                            ${p.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-800">${p.name}</p>
+                            <p class="text-xs text-gray-400">Chart #${p.chart_number} • ${p.phone}</p>
+                        </div>
+                    </a>`;
+                        });
+                        html += `</div>`;
+                    }
+
+                    // Invoices
+                    if (data.invoices.length) {
+                        html += `<div class="p-2 border-b border-gray-100">
+                    <p class="px-2 py-1 text-xs font-bold text-gray-400 uppercase">Invoices</p>`;
+                        data.invoices.forEach(inv => {
+                            const statusClass = inv.status === 'PAID' ? 'bg-green-100 text-green-700' :
+                                inv.status === 'PARTIAL' ? 'bg-orange-100 text-orange-700' :
+                                    'bg-blue-100 text-blue-700';
+                            html += `
+                    <a href="/billing" class="flex items-center justify-between px-3 py-2 hover:bg-teal-50 rounded-lg cursor-pointer transition">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center text-orange-600">
+                                💵
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-800">INV-${1000 + inv.id}</p>
+                                <p class="text-xs text-gray-400">${inv.patient_name}</p>
+                            </div>
+                        </div>
+                        <span class="text-xs px-2 py-1 rounded-full ${statusClass}">${inv.status}</span>
+                    </a>`;
+                        });
+                        html += `</div>`;
+                    }
+
+                    // Appointments
+                    if (data.appointments.length) {
+                        html += `<div class="p-2">
+                    <p class="px-2 py-1 text-xs font-bold text-gray-400 uppercase">Appointments</p>`;
+                        data.appointments.forEach(appt => {
+                            const statusClass = appt.status === 'Completed' ? 'bg-green-100 text-green-700' :
+                                appt.status === 'Canceled' ? 'bg-red-100 text-red-700' :
+                                    'bg-blue-100 text-blue-700';
+                            html += `
+                    <a href="/schedule" class="flex items-center justify-between px-3 py-2 hover:bg-teal-50 rounded-lg cursor-pointer transition">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center text-purple-600">
+                                📅
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-800">${appt.patient_name}</p>
+                                <p class="text-xs text-gray-400">${appt.date} at ${appt.time}</p>
+                            </div>
+                        </div>
+                        <span class="text-xs px-2 py-1 rounded-full ${statusClass}">${appt.status}</span>
+                    </a>`;
+                        });
+                        html += `</div>`;
+                    }
+
+                    searchResults.innerHTML = html;
+                    searchResults.classList.remove('hidden');
+                }
+
+                // Close on outside click
+                document.addEventListener('click', function (e) {
+                    if (!document.getElementById('globalSearchWrapper').contains(e.target)) {
+                        searchResults.classList.add('hidden');
+                    }
+                });
+
+                // Keyboard shortcut (Cmd/Ctrl + K)
+                document.addEventListener('keydown', function (e) {
+                    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                        e.preventDefault();
+                        searchInput.focus();
+                    }
+                    if (e.key === 'Escape') {
+                        searchResults.classList.add('hidden');
+                        searchInput.blur();
+                    }
+                });
+            })();
+        </script>
+        {% endif %}
 
 </body>
 

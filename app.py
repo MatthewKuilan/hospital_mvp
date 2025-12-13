@@ -336,6 +336,61 @@ def debug_reset():
     flash('Database reset successfully!', 'success')
     return redirect(url_for('dashboard'))
 
+@app.route('/api/global-search')
+@login_required
+def global_search():
+    q = request.args.get('q', '').strip().lower()
+    
+    if not q or len(q) < 2:
+        return jsonify({'patients': [], 'invoices': [], 'appointments': []})
+    
+    results = {'patients': [], 'invoices': [], 'appointments': []}
+    
+    # Search Patients
+    patients = Patient.query.filter(
+        (Patient.name.ilike(f'%{q}%')) |
+        (Patient.chart_number.ilike(f'%{q}%')) |
+        (Patient.phone.ilike(f'%{q}%'))
+    ).limit(5).all()
+    
+    for p in patients:
+        results['patients'].append({
+            'id': p.id,
+            'name': p.name,
+            'chart_number': p.chart_number,
+            'phone': p.phone
+        })
+    
+    # Search Invoices by patient name or invoice number
+    invoices = Invoice.query.join(Patient).filter(
+        (Patient.name.ilike(f'%{q}%')) |
+        (Invoice.id.ilike(f'%{q}%'))
+    ).limit(5).all()
+    
+    for inv in invoices:
+        results['invoices'].append({
+            'id': inv.id,
+            'patient_name': inv.patient.name,
+            'total': inv.total_amount,
+            'status': inv.status
+        })
+    
+    # Search Appointments
+    appointments = Appointment.query.join(Patient).filter(
+        (Patient.name.ilike(f'%{q}%'))
+    ).order_by(Appointment.date.desc()).limit(5).all()
+    
+    for appt in appointments:
+        results['appointments'].append({
+            'id': appt.id,
+            'patient_name': appt.patient.name,
+            'date': appt.date.strftime('%Y-%m-%d'),
+            'time': appt.time.strftime('%I:%M %p'),
+            'status': appt.status
+        })
+    
+    return jsonify(results)
+
 @app.route('/patients')
 @login_required
 def patients():
