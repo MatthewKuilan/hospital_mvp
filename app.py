@@ -79,7 +79,7 @@ def seed_data():
     db.session.add(appt2)
     db.session.commit()
     
-    # Invoices
+    # Invoices for patient1
     inv1 = Invoice(patient_id=patient1.id, date_issued=date(2025, 12, 5), total_amount=150.00, status='OPEN')
     db.session.add(inv1)
     db.session.commit()
@@ -89,6 +89,24 @@ def seed_data():
     item2 = InvoiceItem(invoice_id=inv1.id, description="Lab Fee - Basic Panel", qty=1, unit_price=50.00)
     db.session.add(item1)
     db.session.add(item2)
+    
+    # Invoice for patient2 - Partially paid
+    inv2 = Invoice(patient_id=patient2.id, date_issued=date(2025, 12, 8), total_amount=200.00, paid_amount=75.00, status='PARTIAL')
+    db.session.add(inv2)
+    db.session.commit()
+    
+    item3 = InvoiceItem(invoice_id=inv2.id, description="Consultation", qty=1, unit_price=150.00)
+    item4 = InvoiceItem(invoice_id=inv2.id, description="Prescription", qty=1, unit_price=50.00)
+    db.session.add(item3)
+    db.session.add(item4)
+    
+    # Another invoice for patient1 - Paid
+    inv3 = Invoice(patient_id=patient1.id, date_issued=date(2025, 11, 20), total_amount=100.00, paid_amount=100.00, status='PAID')
+    db.session.add(inv3)
+    db.session.commit()
+    
+    item5 = InvoiceItem(invoice_id=inv3.id, description="Follow-up Visit", qty=1, unit_price=100.00)
+    db.session.add(item5)
     db.session.commit()
     
     print("Database seeded successfully.")
@@ -190,6 +208,26 @@ def patients_search():
         'status': p.status,
         'registration_date': p.registration_date.isoformat() if p.registration_date else None
     } for p in patients])
+
+@app.route('/patients/<int:id>/stats')
+@login_required
+def patient_stats(id):
+    """Get real stats for a patient: appointments, invoices, balance"""
+    patient = Patient.query.get_or_404(id)
+    
+    # Count appointments
+    appointment_count = Appointment.query.filter_by(patient_id=id).count()
+    
+    # Count invoices and calculate balance
+    invoices = Invoice.query.filter_by(patient_id=id).all()
+    invoice_count = len(invoices)
+    total_balance = sum(inv.balance_due for inv in invoices)
+    
+    return jsonify({
+        'appointments': appointment_count,
+        'invoices': invoice_count,
+        'balance': round(total_balance, 2)
+    })
 
 @app.route('/patients/add', methods=['POST'])
 @login_required

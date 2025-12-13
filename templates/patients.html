@@ -393,7 +393,7 @@
     // Profile Modal Functions
     let currentProfilePatient = null;
 
-    function openProfileModal(patient) {
+    async function openProfileModal(patient) {
         currentProfilePatient = patient;
 
         // Set avatar initials
@@ -412,12 +412,28 @@
                 month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
             }) : 'Not recorded';
 
-        // Quick stats - these would need API calls for real data, using placeholders
-        document.getElementById('profileAppts').textContent = Math.floor(Math.random() * 10);
-        document.getElementById('profileInvoices').textContent = Math.floor(Math.random() * 5);
-        document.getElementById('profileBalance').textContent = '$' + (Math.random() * 500).toFixed(2);
+        // Show loading state for stats
+        document.getElementById('profileAppts').textContent = '...';
+        document.getElementById('profileInvoices').textContent = '...';
+        document.getElementById('profileBalance').textContent = '...';
 
         document.getElementById('profileModal').classList.remove('hidden');
+
+        // Fetch real stats from API
+        try {
+            const response = await fetch(`/patients/${patient.id}/stats`);
+            if (response.ok) {
+                const stats = await response.json();
+                document.getElementById('profileAppts').textContent = stats.appointments;
+                document.getElementById('profileInvoices').textContent = stats.invoices;
+                document.getElementById('profileBalance').textContent = '$' + stats.balance.toFixed(2);
+            }
+        } catch (error) {
+            console.error('Failed to fetch patient stats:', error);
+            document.getElementById('profileAppts').textContent = '-';
+            document.getElementById('profileInvoices').textContent = '-';
+            document.getElementById('profileBalance').textContent = '-';
+        }
     }
 
     function closeProfileModal() {
