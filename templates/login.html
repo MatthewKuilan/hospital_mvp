@@ -8,7 +8,7 @@
             <h1 class="text-4xl font-bold mb-2 text-blue-900">MediCore</h1>
             <h2 class="text-xl text-gray-600 mb-8">Access the HMS Portal</h2>
 
-            <form action="{{ url_for('login') }}" method="POST" class="space-y-6">
+            <form action="{{ url_for('login') }}" method="POST" class="space-y-6" id="loginForm">
                 <div>
                     <label for="username" class="block text-gray-700 font-medium mb-2">Username</label>
                     <input type="text" name="username" id="username"
@@ -23,11 +23,39 @@
                         required>
                 </div>
 
-                <button type="submit"
-                    class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition duration-300">
-                    Sign In
+                <!-- Remember Me & Forgot Password -->
+                <div class="flex items-center justify-between">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" name="remember"
+                            class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <span class="text-gray-600 text-sm">Remember me</span>
+                    </label>
+                    <a href="#" class="text-sm text-blue-600 hover:text-blue-800 hover:underline">Forgot password?</a>
+                </div>
+
+                <button type="submit" id="loginBtn"
+                    class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <svg id="loginSpinner" class="hidden animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                        </circle>
+                        <path class="opacity-75" fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                        </path>
+                    </svg>
+                    <span id="loginText">Sign In</span>
                 </button>
             </form>
+
+            <script>
+                document.getElementById('loginForm').addEventListener('submit', function () {
+                    const btn = document.getElementById('loginBtn');
+                    const spinner = document.getElementById('loginSpinner');
+                    const text = document.getElementById('loginText');
+                    btn.disabled = true;
+                    spinner.classList.remove('hidden');
+                    text.textContent = 'Signing in...';
+                });
+            </script>
         </div>
     </div>
 
