@@ -13,40 +13,75 @@
     </div>
 
     <!-- Filters (White Box Style) -->
-    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex items-center space-x-8 mb-6">
-        <div class="w-1/3">
-            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Provider</label>
-            <select id="staffSelect" onchange="loadAppointments()"
-                class="block w-full border border-gray-300 rounded px-3 py-2 text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500">
-                {% for s in staff %}
-                <option value="{{ s.id }}">{{ s.username }} ({{ s.role }})</option>
-                {% endfor %}
-            </select>
+    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-100 mb-6">
+        <div class="flex items-center space-x-8">
+            <div class="w-1/4">
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Provider</label>
+                <select id="staffSelect" onchange="loadAppointments()"
+                    class="block w-full border border-gray-300 rounded px-3 py-2 text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500">
+                    {% for s in staff %}
+                    <option value="{{ s.id }}">{{ s.username }} ({{ s.role }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="w-1/4">
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Date</label>
+                <input type="date" id="dateSelect" onchange="loadAppointments()" value="{{ today }}"
+                    class="block w-full border border-gray-300 rounded px-3 py-2 text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500">
+            </div>
+
+            <!-- View Mode Toggle -->
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">View</label>
+                <div class="flex rounded-lg border border-gray-300 overflow-hidden">
+                    <button id="viewDay" onclick="setViewMode('day')"
+                        class="px-4 py-2 text-sm font-medium bg-teal-600 text-white">Day</button>
+                    <button id="viewWeek" onclick="setViewMode('week')"
+                        class="px-4 py-2 text-sm font-medium bg-white text-gray-700 hover:bg-gray-50">Week</button>
+                </div>
+            </div>
+
+            <div class="flex-grow flex justify-end items-center text-gray-500 font-medium">
+                <!-- Date navigator - Now functional -->
+                <button onclick="changeDate(-1)" class="p-2 hover:bg-gray-100 rounded text-xl font-bold">&lt;</button>
+                <span class="mx-3 cursor-pointer hover:text-teal-600 flex items-center gap-2"
+                    onclick="document.getElementById('dateSelect').showPicker()">
+                    <span id="displayDate">Dec 1, 2025</span>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z">
+                        </path>
+                    </svg>
+                </span>
+                <button onclick="changeDate(1)" class="p-2 hover:bg-gray-100 rounded text-xl font-bold">&gt;</button>
+            </div>
         </div>
-        <div class="w-1/3">
-            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Date</label>
-            <input type="date" id="dateSelect" onchange="loadAppointments()" value="{{ today }}"
-                class="block w-full border border-gray-300 rounded px-3 py-2 text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500">
-        </div>
-        <div class="flex-grow flex justify-end items-center text-gray-500 font-medium">
-            <!-- Date navigator - Now functional -->
-            <button onclick="changeDate(-1)" class="p-2 hover:bg-gray-100 rounded text-xl font-bold">&lt;</button>
-            <span class="mx-3 cursor-pointer hover:text-teal-600 flex items-center gap-2"
-                onclick="document.getElementById('dateSelect').showPicker()">
-                <span id="displayDate">Dec 1, 2025</span>
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z">
-                    </path>
-                </svg>
-            </span>
-            <button onclick="changeDate(1)" class="p-2 hover:bg-gray-100 rounded text-xl font-bold">&gt;</button>
+
+        <!-- Visit Type Legend -->
+        <div class="flex items-center gap-4 mt-4 pt-4 border-t border-gray-100">
+            <span class="text-xs font-bold text-gray-400 uppercase">Visit Types:</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-blue-500"></span><span
+                    class="text-xs text-gray-600">General Checkup</span></span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-purple-500"></span><span
+                    class="text-xs text-gray-600">Consult</span></span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-teal-500"></span><span
+                    class="text-xs text-gray-600">Follow-up</span></span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-orange-500"></span><span
+                    class="text-xs text-gray-600">Lab Work</span></span>
         </div>
     </div>
 
-    <!-- Schedule Grid -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-100 divide-y divide-gray-100" id="scheduleGrid">
+    <!-- Schedule Grid (Day View) -->
+    <div id="dayView" class="bg-white rounded-lg shadow-sm border border-gray-100 divide-y divide-gray-100"
+        id="scheduleGrid">
         <!-- Javascript renders slots here -->
+    </div>
+
+    <!-- Week View Grid (hidden by default) -->
+    <div id="weekView" class="hidden bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+        <div id="weekGrid">
+            <!-- Javascript renders week here -->
+        </div>
     </div>
 </div>
 
@@ -157,6 +192,43 @@
 </div>
 
 <script>
+    // View mode state
+    let currentViewMode = 'day';
+
+    // Visit type color scheme
+    function getVisitTypeColors(visitType) {
+        const colors = {
+            'General Checkup': { bg: 'bg-blue-50', border: 'border-blue-500', text: 'text-blue-900', badge: 'bg-blue-500' },
+            'Consult': { bg: 'bg-purple-50', border: 'border-purple-500', text: 'text-purple-900', badge: 'bg-purple-500' },
+            'Follow-up': { bg: 'bg-teal-50', border: 'border-teal-500', text: 'text-teal-900', badge: 'bg-teal-500' },
+            'Lab Work': { bg: 'bg-orange-50', border: 'border-orange-500', text: 'text-orange-900', badge: 'bg-orange-500' }
+        };
+        return colors[visitType] || colors['General Checkup'];
+    }
+
+    // Toggle view mode
+    function setViewMode(mode) {
+        currentViewMode = mode;
+
+        // Update button styles
+        const dayBtn = document.getElementById('viewDay');
+        const weekBtn = document.getElementById('viewWeek');
+
+        if (mode === 'day') {
+            dayBtn.className = 'px-4 py-2 text-sm font-medium bg-teal-600 text-white';
+            weekBtn.className = 'px-4 py-2 text-sm font-medium bg-white text-gray-700 hover:bg-gray-50';
+            document.getElementById('dayView').classList.remove('hidden');
+            document.getElementById('weekView').classList.add('hidden');
+        } else {
+            weekBtn.className = 'px-4 py-2 text-sm font-medium bg-teal-600 text-white';
+            dayBtn.className = 'px-4 py-2 text-sm font-medium bg-white text-gray-700 hover:bg-gray-50';
+            document.getElementById('dayView').classList.add('hidden');
+            document.getElementById('weekView').classList.remove('hidden');
+        }
+
+        loadAppointments();
+    }
+
     // Format date string without timezone issues
     function formatDateDisplay(dateStr) {
         const [year, month, day] = dateStr.split('-').map(Number);
@@ -212,14 +284,18 @@
         const staffId = document.getElementById('staffSelect').value;
         const date = document.getElementById('dateSelect').value;
 
-        const response = await fetch(`/appointments/api/list?staff_id=${staffId}&date=${date}`);
-        const appointments = await response.json();
-
-        renderGrid(appointments);
+        if (currentViewMode === 'day') {
+            const response = await fetch(`/appointments/api/list?staff_id=${staffId}&date=${date}`);
+            const appointments = await response.json();
+            renderDayGrid(appointments);
+        } else {
+            // Week view - fetch appointments for the whole week
+            await renderWeekView(staffId, date);
+        }
     }
 
-    function renderGrid(appointments) {
-        const grid = document.getElementById('scheduleGrid');
+    function renderDayGrid(appointments) {
+        const grid = document.getElementById('dayView');
         grid.innerHTML = '';
 
         const times = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'];
@@ -256,8 +332,9 @@
                 const appt = appointments.find(a => a.time === time);
 
                 if (appt) {
+                    const colors = getVisitTypeColors(appt.visit_type);
+
                     if (appt.status === 'Canceled') {
-                        // Canceled styling (Strikethrough or dim)
                         contentCol.innerHTML = `
                             <div class="h-full w-full bg-red-50 border border-red-100 rounded p-4 cursor-pointer opacity-75" onclick="openEditModal(${JSON.stringify(appt).replace(/"/g, '&quot;')})">
                                 <p class="font-bold text-red-900 line-through">${appt.patient_name}</p>
@@ -265,7 +342,6 @@
                             </div>
                         `;
                     } else if (appt.status === 'Completed') {
-                        // Completed styling
                         contentCol.innerHTML = `
                             <div class="h-full w-full bg-green-50 border border-green-100 rounded p-4 cursor-pointer" onclick="openEditModal(${JSON.stringify(appt).replace(/"/g, '&quot;')})">
                                 <p class="font-bold text-green-900">${appt.patient_name} ✓</p>
@@ -273,25 +349,110 @@
                             </div>
                         `;
                     } else {
-                        // Scheduled (Blue Card)
+                        // Scheduled - Color coded by visit type
                         contentCol.innerHTML = `
-                            <div class="h-full w-full bg-blue-50/80 border-l-4 border-blue-500 rounded-r p-3 cursor-pointer hover:shadow-md transition" onclick="openEditModal(${JSON.stringify(appt).replace(/"/g, '&quot;')})">
+                            <div class="h-full w-full ${colors.bg} border-l-4 ${colors.border} rounded-r p-3 cursor-pointer hover:shadow-md transition" onclick="openEditModal(${JSON.stringify(appt).replace(/"/g, '&quot;')})">
                                 <div class="flex justify-between">
-                                    <p class="font-bold text-blue-900">${appt.patient_name}</p>
-                                    <span class="bg-white text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded-full border border-blue-100">Scheduled</span>
+                                    <p class="font-bold ${colors.text}">${appt.patient_name}</p>
+                                    <span class="${colors.badge} text-white text-[10px] font-bold px-2 py-0.5 rounded-full">${appt.visit_type}</span>
                                 </div>
-                                <p class="text-xs text-blue-700 mt-1">${appt.visit_type}</p>
-                                <p class="text-[10px] text-blue-400 mt-2">🕒 ${timeStr} - ${new Date(d.getTime() + 30 * 60000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</p>
+                                <p class="text-xs ${colors.text} opacity-75 mt-1">🕒 ${timeStr}</p>
                             </div>
                         `;
                     }
-                } else {
-                    // Empty slot
                 }
             }
 
             row.appendChild(contentCol);
             grid.appendChild(row);
+        });
+    }
+
+    async function renderWeekView(staffId, dateStr) {
+        const weekGrid = document.getElementById('weekGrid');
+        weekGrid.innerHTML = '';
+
+        // Parse the date
+        const [year, month, day] = dateStr.split('-').map(Number);
+        const baseDate = new Date(year, month - 1, day);
+
+        // Get start of week (Sunday)
+        const startOfWeek = new Date(baseDate);
+        startOfWeek.setDate(baseDate.getDate() - baseDate.getDay());
+
+        // Days of the week
+        const days = [];
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(startOfWeek);
+            d.setDate(startOfWeek.getDate() + i);
+            days.push(d);
+        }
+
+        // Build header row
+        const headerRow = document.createElement('div');
+        headerRow.className = 'grid grid-cols-8 border-b border-gray-200';
+
+        // Empty cell for time column
+        headerRow.innerHTML = '<div class="p-3 bg-gray-50 border-r border-gray-200"></div>';
+
+        days.forEach(d => {
+            const isToday = d.toDateString() === new Date().toDateString();
+            const cell = document.createElement('div');
+            cell.className = `p-3 text-center border-r border-gray-200 ${isToday ? 'bg-teal-50' : 'bg-gray-50'}`;
+            cell.innerHTML = `
+                <div class="text-xs font-bold uppercase ${isToday ? 'text-teal-600' : 'text-gray-500'}">${d.toLocaleDateString('en-US', { weekday: 'short' })}</div>
+                <div class="text-lg font-bold ${isToday ? 'text-teal-700' : 'text-gray-700'}">${d.getDate()}</div>
+            `;
+            headerRow.appendChild(cell);
+        });
+        weekGrid.appendChild(headerRow);
+
+        // Fetch appointments for each day
+        const weekAppointments = {};
+        for (const d of days) {
+            const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            const response = await fetch(`/appointments/api/list?staff_id=${staffId}&date=${dateKey}`);
+            weekAppointments[dateKey] = await response.json();
+        }
+
+        // Time slots
+        const times = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'];
+
+        times.forEach(time => {
+            const row = document.createElement('div');
+            row.className = 'grid grid-cols-8 border-b border-gray-100 min-h-[60px]';
+
+            // Time cell
+            const [h, m] = time.split(':');
+            const timeD = new Date(); timeD.setHours(h); timeD.setMinutes(m);
+            const timeStr = timeD.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+            row.innerHTML = `<div class="p-2 border-r border-gray-100 text-xs font-bold text-gray-400 flex items-center justify-center">${timeStr}</div>`;
+
+            days.forEach(d => {
+                const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                const dayAppts = weekAppointments[dateKey] || [];
+                const appt = dayAppts.find(a => a.time === time);
+
+                const cell = document.createElement('div');
+                cell.className = 'p-1 border-r border-gray-100';
+
+                if (time === '12:00') {
+                    cell.innerHTML = '<div class="h-full w-full bg-gray-50 rounded text-xs text-gray-400 flex items-center justify-center">Lunch</div>';
+                } else if (appt) {
+                    const colors = getVisitTypeColors(appt.visit_type);
+                    cell.innerHTML = `
+                        <div class="${colors.bg} ${colors.border} border-l-2 rounded-r p-1 h-full cursor-pointer text-xs" 
+                             onclick="openEditModal(${JSON.stringify(appt).replace(/"/g, '&quot;')})">
+                            <div class="font-bold ${colors.text} truncate">${appt.patient_name}</div>
+                        </div>
+                    `;
+                }
+
+                row.appendChild(cell);
+            });
+
+            weekGrid.appendChild(row);
         });
     }
 
