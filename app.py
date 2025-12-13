@@ -214,6 +214,105 @@ def dashboard():
                            completed_count=completed_count,
                            canceled_count=canceled_count)
 
+@app.route('/reports')
+@login_required
+def reports():
+    from datetime import timedelta
+    from sqlalchemy import func
+    today = date.today()
+    
+    # ===== FINANCIAL REPORTS =====
+    # Monthly revenue (last 6 months)
+    monthly_revenue = []
+    monthly_labels = []
+    for i in range(5, -1, -1):
+        # Get first day of month
+        first_of_month = (today.replace(day=1) - timedelta(days=i*30)).replace(day=1)
+        # Get last day of month
+        if first_of_month.month == 12:
+            last_of_month = first_of_month.replace(year=first_of_month.year + 1, month=1, day=1) - timedelta(days=1)
+        else:
+            last_of_month = first_of_month.replace(month=first_of_month.month + 1, day=1) - timedelta(days=1)
+        
+        month_total = db.session.query(func.sum(Invoice.paid_amount)).filter(
+            Invoice.date_issued >= first_of_month,
+            Invoice.date_issued <= last_of_month
+        ).scalar() or 0
+        
+        monthly_revenue.append(round(month_total, 2))
+        monthly_labels.append(first_of_month.strftime('%b'))
+    
+    # Outstanding balances
+    total_outstanding = db.session.query(func.sum(Invoice.total_amount - Invoice.paid_amount)).filter(
+        Invoice.status.in_(['OPEN', 'PARTIAL'])
+    ).scalar() or 0
+    
+    total_collected = db.session.query(func.sum(Invoice.paid_amount)).scalar() or 0
+    
+    # ===== PATIENT GROWTH =====
+    # New registrations per month (last 6 months)
+    patient_growth = []
+    patient_labels = []
+    for i in range(5, -1, -1):
+        first_of_month = (today.replace(day=1) - timedelta(days=i*30)).replace(day=1)
+        if first_of_month.month == 12:
+            last_of_month = first_of_month.replace(year=first_of_month.year + 1, month=1, day=1) - timedelta(days=1)
+        else:
+            last_of_month = first_of_month.replace(month=first_of_month.month + 1, day=1) - timedelta(days=1)
+        
+        count = Patient.query.filter(
+            Patient.registration_date >= first_of_month,
+            Patient.registration_date <= last_of_month
+        ).count()
+        
+        patient_growth.append(count)
+        patient_labels.append(first_of_month.strftime('%b'))
+    
+    # ===== APPOINTMENT REPORTS =====
+    # Status breakdown
+    total_appointments = Appointment.query.count()
+    scheduled_count = Appointment.query.filter_by(status='Scheduled').count()
+    completed_count = Appointment.query.filter_by(status='Completed').count()
+    canceled_count = Appointment.query.filter_by(status='Canceled').count()
+    
+    # Cancellation rate
+    cancellation_rate = round((canceled_count / total_appointments * 100), 1) if total_appointments > 0 else 0
+    
+    # Busiest times (appointments by hour)
+    busiest_times = []
+    time_labels = []
+    for hour in range(9, 18):  # 9 AM to 5 PM
+        hour_time = time(hour, 0)
+        count = Appointment.query.filter_by(time=hour_time).count()
+        busiest_times.append(count)
+        time_labels.append(f"{hour}:00")
+    
+    # Busiest days (appointments by weekday)
+    busiest_days = [0] * 7
+    day_labels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+    all_appts = Appointment.query.all()
+    for appt in all_appts:
+        busiest_days[appt.date.weekday()] += 1
+    # Reorder: Python weekday() is Mon=0, we want Sun=0
+    busiest_days = [busiest_days[6]] + busiest_days[:6]
+    
+    return render_template('reports.html',
+                           monthly_revenue=monthly_revenue,
+                           monthly_labels=monthly_labels,
+                           total_outstanding=round(total_outstanding, 2),
+                           total_collected=round(total_collected, 2),
+                           patient_growth=patient_growth,
+                           patient_labels=patient_labels,
+                           total_appointments=total_appointments,
+                           scheduled_count=scheduled_count,
+                           completed_count=completed_count,
+                           canceled_count=canceled_count,
+                           cancellation_rate=cancellation_rate,
+                           busiest_times=busiest_times,
+                           time_labels=time_labels,
+                           busiest_days=busiest_days,
+                           day_labels=day_labels)
+
 @app.route('/logout')
 @login_required
 def logout():
