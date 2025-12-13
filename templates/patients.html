@@ -36,7 +36,7 @@
     </div>
 
     <!-- Patient Table -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+    <div id="patientTableContainer" class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
@@ -246,7 +246,7 @@
             paginationDiv = document.createElement('div');
             paginationDiv.id = 'paginationControls';
             paginationDiv.className = 'px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between';
-            document.querySelector('.bg-white.rounded-lg.shadow-sm.border').appendChild(paginationDiv);
+            document.getElementById('patientTableContainer').appendChild(paginationDiv);
         }
 
         if (allPatients.length === 0) {
