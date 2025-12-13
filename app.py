@@ -171,13 +171,48 @@ def dashboard():
     # Recent Activity (Last 5 appointments)
     recent_activity = Appointment.query.order_by(Appointment.date.desc(), Appointment.time.desc()).limit(5).all()
     
+    # Today's Schedule (for widget)
+    todays_schedule = Appointment.query.filter_by(date=today).order_by(Appointment.time).all()
+    
+    # Notifications data
+    upcoming_appts = Appointment.query.filter(
+        Appointment.date == today,
+        Appointment.status == 'Scheduled'
+    ).order_by(Appointment.time).limit(5).all()
+    
+    overdue_invoices = Invoice.query.filter(Invoice.status.in_(['OPEN', 'PARTIAL'])).order_by(Invoice.date_issued).limit(5).all()
+    
+    # Chart data - Revenue for last 7 days
+    from datetime import timedelta
+    revenue_data = []
+    revenue_labels = []
+    for i in range(6, -1, -1):
+        day = today - timedelta(days=i)
+        day_invoices = Invoice.query.filter(Invoice.date_issued == day).all()
+        daily_total = sum(inv.paid_amount for inv in day_invoices)
+        revenue_data.append(daily_total)
+        revenue_labels.append(day.strftime('%a'))
+    
+    # Appointment stats for chart (by status)
+    scheduled_count = Appointment.query.filter_by(status='Scheduled').count()
+    completed_count = Appointment.query.filter_by(status='Completed').count()
+    canceled_count = Appointment.query.filter_by(status='Canceled').count()
+    
     return render_template('dashboard.html', 
                            total_patients=total_patients, 
                            appts_today=appts_today,
                            total_staff=total_staff,
                            pending_invoices=pending_invoices,
                            recent_activity=recent_activity,
-                           today=today.strftime('%b %d, %Y'))
+                           today=today.strftime('%b %d, %Y'),
+                           todays_schedule=todays_schedule,
+                           upcoming_appts=upcoming_appts,
+                           overdue_invoices=overdue_invoices,
+                           revenue_data=revenue_data,
+                           revenue_labels=revenue_labels,
+                           scheduled_count=scheduled_count,
+                           completed_count=completed_count,
+                           canceled_count=canceled_count)
 
 @app.route('/logout')
 @login_required
