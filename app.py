@@ -124,7 +124,7 @@ def dashboard():
     total_patients = Patient.query.count()
     appts_today = Appointment.query.filter_by(date=today).count()
     total_staff = Staff.query.count()
-    pending_invoices = 0 # Placeholder for Billing
+    pending_invoices = Invoice.query.filter(Invoice.status.in_(['OPEN', 'PARTIAL'])).count()
     
     # Recent Activity (Last 5 appointments)
     recent_activity = Appointment.query.order_by(Appointment.date.desc(), Appointment.time.desc()).limit(5).all()
@@ -134,7 +134,8 @@ def dashboard():
                            appts_today=appts_today,
                            total_staff=total_staff,
                            pending_invoices=pending_invoices,
-                           recent_activity=recent_activity)
+                           recent_activity=recent_activity,
+                           today=today.strftime('%b %d, %Y'))
 
 @app.route('/logout')
 @login_required

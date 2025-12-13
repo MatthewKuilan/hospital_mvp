@@ -45,6 +45,8 @@
                     <th class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Name</th>
                     <th class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">DOB</th>
                     <th class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Phone</th>
+                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Address
+                    </th>
                     <th class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Status</th>
                     <th class="px-6 py-4 text-right text-xs font-bold text-gray-400 uppercase tracking-wider">Actions
                     </th>
@@ -129,9 +131,17 @@
             <div class="flex justify-end gap-3 pt-2">
                 <button type="button" onclick="closeModal()"
                     class="px-6 py-3 font-bold text-gray-500 hover:text-gray-800 transition">Cancel</button>
-                <button type="submit"
-                    class="bg-teal-700 hover:bg-teal-800 text-white font-bold py-3 px-8 rounded-md shadow-md transition">Save
-                    Patient Record</button>
+                <button type="submit" id="submitBtn"
+                    class="bg-teal-700 hover:bg-teal-800 text-white font-bold py-3 px-8 rounded-md shadow-md transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <svg id="submitSpinner" class="hidden animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                        </circle>
+                        <path class="opacity-75" fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                        </path>
+                    </svg>
+                    <span id="submitText">Save Patient Record</span>
+                </button>
             </div>
         </form>
     </div>
@@ -151,7 +161,7 @@
         tbody.innerHTML = '';
 
         if (patients.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-gray-500 font-medium">No patients found.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-8 text-center text-gray-500 font-medium">No patients found.</td></tr>';
             return;
         }
 
@@ -162,6 +172,7 @@
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 bg-yellow-50/50">${patient.name}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-medium">${patient.dob}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-medium">${patient.phone}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 max-w-xs truncate" title="${patient.address || ''}">${patient.address || '-'}</td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <span class="px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full bg-green-100 text-green-800">
                             ${patient.status}
@@ -260,17 +271,44 @@
         }
     }
 
-    // Toast notification function (simple version)
-    function showToast(msg) {
-        const div = document.createElement('div');
-        div.className = 'fixed bottom-5 right-5 bg-green-600 text-white px-6 py-3 rounded shadow-lg z-50 animate-bounce';
-        div.innerHTML = `<strong>Success!</strong> ${msg || 'Saved successfully.'}`;
-        document.body.appendChild(div);
-        setTimeout(() => div.remove(), 3000);
+    // Professional Toast notification
+    function showToast(msg, type = 'success') {
+        const colors = {
+            success: 'bg-green-500',
+            error: 'bg-red-500',
+            info: 'bg-blue-500'
+        };
+        const icons = {
+            success: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>',
+            error: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>',
+            info: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>'
+        };
+
+        const toast = document.createElement('div');
+        toast.className = `fixed bottom-5 right-5 ${colors[type]} text-white px-5 py-4 rounded-lg shadow-xl z-50 flex items-center gap-3 transform translate-x-full transition-transform duration-300`;
+        toast.innerHTML = `${icons[type]}<span class="font-medium">${msg}</span>`;
+        document.body.appendChild(toast);
+
+        // Slide in
+        setTimeout(() => toast.classList.remove('translate-x-full'), 10);
+
+        // Slide out and remove
+        setTimeout(() => {
+            toast.classList.add('translate-x-full');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
     }
 
     document.getElementById('addPatientForm').addEventListener('submit', async function (e) {
         e.preventDefault();
+
+        // Show loading state
+        const btn = document.getElementById('submitBtn');
+        const spinner = document.getElementById('submitSpinner');
+        const text = document.getElementById('submitText');
+        btn.disabled = true;
+        spinner.classList.remove('hidden');
+        text.textContent = 'Saving...';
 
         const editingId = document.getElementById('editingId').value;
         const method = editingId ? 'PUT' : 'POST';
@@ -286,25 +324,33 @@
             registration_date: document.getElementById('registrationDate').value
         };
 
-        const response = await fetch(url, {
-            method: method,
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data)
-        });
+        try {
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            });
 
-        const result = await response.json();
+            const result = await response.json();
 
-        if (response.ok) {
-            closeModal();
-            showToast(result.message);
-            searchPatients(); // Refresh list
-        } else {
-            const errorDiv = document.getElementById('modalError');
-            const errorMessage = document.getElementById('modalErrorMessage');
-            errorMessage.textContent = result.error || 'An error occurred';
-            errorDiv.classList.remove('hidden');
+            if (response.ok) {
+                closeModal();
+                showToast(result.message);
+                searchPatients(); // Refresh list
+            } else {
+                const errorDiv = document.getElementById('modalError');
+                const errorMessage = document.getElementById('modalErrorMessage');
+                errorMessage.textContent = result.error || 'An error occurred';
+                errorDiv.classList.remove('hidden');
+                showToast(result.error || 'Error saving patient', 'error');
+            }
+        } finally {
+            // Reset button state
+            btn.disabled = false;
+            spinner.classList.add('hidden');
+            text.textContent = 'Save Patient Record';
         }
     });
 </script>
