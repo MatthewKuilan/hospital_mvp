@@ -148,24 +148,68 @@
 </div>
 
 <script>
+    let currentPage = 1;
+    const itemsPerPage = 10;
+    let allPatients = [];
+
     document.addEventListener('DOMContentLoaded', () => {
         searchPatients();
     });
 
     async function searchPatients() {
         const query = document.getElementById('searchInput').value;
-        const response = await fetch(`/patients/api/search?q=${encodeURIComponent(query)}`);
-        const patients = await response.json();
+        const tbody = document.getElementById('patientsTableBody');
 
+        // Show loading spinner
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="px-6 py-12 text-center">
+                    <div class="flex flex-col items-center justify-center">
+                        <svg class="animate-spin h-8 w-8 text-teal-600 mb-3" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span class="text-gray-500 font-medium">Loading patients...</span>
+                    </div>
+                </td>
+            </tr>
+        `;
+
+        const response = await fetch(`/patients/api/search?q=${encodeURIComponent(query)}`);
+        allPatients = await response.json();
+        currentPage = 1;
+        renderPatients();
+    }
+
+    function renderPatients() {
         const tbody = document.getElementById('patientsTableBody');
         tbody.innerHTML = '';
 
-        if (patients.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-8 text-center text-gray-500 font-medium">No patients found.</td></tr>';
+        if (allPatients.length === 0) {
+            // Empty state with illustration
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="px-6 py-12 text-center">
+                        <div class="flex flex-col items-center justify-center">
+                            <svg class="w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                            <p class="text-gray-500 font-medium text-lg mb-1">No patients found</p>
+                            <p class="text-gray-400 text-sm">Try adjusting your search or add a new patient</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            updatePagination();
             return;
         }
 
-        patients.forEach(patient => {
+        // Calculate pagination
+        const start = (currentPage - 1) * itemsPerPage;
+        const end = start + itemsPerPage;
+        const paginatedPatients = allPatients.slice(start, end);
+
+        paginatedPatients.forEach(patient => {
             const row = `
                 <tr class="hover:bg-gray-50 transition border-b border-gray-50 last:border-b-0">
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-500">${patient.chart_number}</td>
@@ -190,6 +234,53 @@
             `;
             tbody.innerHTML += row;
         });
+
+        updatePagination();
+    }
+
+    function updatePagination() {
+        const totalPages = Math.ceil(allPatients.length / itemsPerPage);
+        let paginationDiv = document.getElementById('paginationControls');
+
+        if (!paginationDiv) {
+            paginationDiv = document.createElement('div');
+            paginationDiv.id = 'paginationControls';
+            paginationDiv.className = 'px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between';
+            document.querySelector('.bg-white.rounded-lg.shadow-sm.border').appendChild(paginationDiv);
+        }
+
+        if (allPatients.length === 0) {
+            paginationDiv.innerHTML = '';
+            return;
+        }
+
+        paginationDiv.innerHTML = `
+            <p class="text-sm text-gray-500">
+                Showing <span class="font-medium">${(currentPage - 1) * itemsPerPage + 1}</span> to 
+                <span class="font-medium">${Math.min(currentPage * itemsPerPage, allPatients.length)}</span> of 
+                <span class="font-medium">${allPatients.length}</span> patients
+            </p>
+            <div class="flex gap-2">
+                <button onclick="changePage(-1)" ${currentPage === 1 ? 'disabled' : ''} 
+                    class="px-3 py-1 rounded-md text-sm font-medium ${currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'}">
+                    Previous
+                </button>
+                <span class="px-3 py-1 text-sm text-gray-600">Page ${currentPage} of ${totalPages}</span>
+                <button onclick="changePage(1)" ${currentPage === totalPages ? 'disabled' : ''} 
+                    class="px-3 py-1 rounded-md text-sm font-medium ${currentPage === totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'}">
+                    Next
+                </button>
+            </div>
+        `;
+    }
+
+    function changePage(delta) {
+        const totalPages = Math.ceil(allPatients.length / itemsPerPage);
+        const newPage = currentPage + delta;
+        if (newPage >= 1 && newPage <= totalPages) {
+            currentPage = newPage;
+            renderPatients();
+        }
     }
 
     // Close menus when clicking outside
