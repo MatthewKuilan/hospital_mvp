@@ -83,3 +83,78 @@ class Payment(db.Model):
     
     def __repr__(self):
         return f'<Payment ${self.amount} on {self.payment_date}>'
+
+# ===== MEDICAL RECORDS MODELS =====
+
+class VisitNote(db.Model):
+    """Clinical notes per appointment"""
+    id = db.Column(db.Integer, primary_key=True)
+    appointment_id = db.Column(db.Integer, db.ForeignKey('appointment.id'), nullable=False)
+    patient_id = db.Column(db.Integer, db.ForeignKey('patient.id'), nullable=False)
+    staff_id = db.Column(db.Integer, db.ForeignKey('staff.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=db.func.now())
+    
+    # SOAP Note format
+    chief_complaint = db.Column(db.Text)  # Why patient is visiting
+    subjective = db.Column(db.Text)  # Patient's description of symptoms
+    objective = db.Column(db.Text)  # Doctor's observations, vitals, exam findings
+    assessment = db.Column(db.Text)  # Diagnosis
+    plan = db.Column(db.Text)  # Treatment plan
+    
+    # Vitals (optional)
+    vitals_bp = db.Column(db.String(20))  # Blood pressure
+    vitals_pulse = db.Column(db.Integer)  # Heart rate
+    vitals_temp = db.Column(db.Float)  # Temperature
+    vitals_weight = db.Column(db.Float)  # Weight in lbs
+    
+    appointment = db.relationship('Appointment', backref=db.backref('visit_notes', lazy=True, cascade="all, delete-orphan"))
+    patient = db.relationship('Patient', backref=db.backref('visit_notes', lazy=True))
+    staff = db.relationship('Staff', backref=db.backref('visit_notes', lazy=True))
+    
+    def __repr__(self):
+        return f'<VisitNote {self.id} - Appt #{self.appointment_id}>'
+
+class Prescription(db.Model):
+    """Medications prescribed to patients"""
+    id = db.Column(db.Integer, primary_key=True)
+    patient_id = db.Column(db.Integer, db.ForeignKey('patient.id'), nullable=False)
+    staff_id = db.Column(db.Integer, db.ForeignKey('staff.id'), nullable=False)  # Prescribing doctor
+    visit_note_id = db.Column(db.Integer, db.ForeignKey('visit_note.id'), nullable=True)  # Optional link to visit
+    created_at = db.Column(db.DateTime, default=db.func.now())
+    
+    medication_name = db.Column(db.String(100), nullable=False)
+    dosage = db.Column(db.String(50), nullable=False)  # e.g., "500mg"
+    frequency = db.Column(db.String(100), nullable=False)  # e.g., "Twice daily with food"
+    duration = db.Column(db.String(50))  # e.g., "14 days"
+    quantity = db.Column(db.Integer, default=30)
+    refills = db.Column(db.Integer, default=0)
+    instructions = db.Column(db.Text)  # Special instructions
+    status = db.Column(db.String(20), default='Active')  # Active, Completed, Discontinued
+    
+    patient = db.relationship('Patient', backref=db.backref('prescriptions', lazy=True, cascade="all, delete-orphan"))
+    staff = db.relationship('Staff', backref=db.backref('prescriptions', lazy=True))
+    visit_note = db.relationship('VisitNote', backref=db.backref('prescriptions', lazy=True))
+    
+    def __repr__(self):
+        return f'<Prescription {self.medication_name} for Patient #{self.patient_id}>'
+
+class MedicalDocument(db.Model):
+    """Uploaded documents like lab results, imaging, etc."""
+    id = db.Column(db.Integer, primary_key=True)
+    patient_id = db.Column(db.Integer, db.ForeignKey('patient.id'), nullable=False)
+    uploaded_by = db.Column(db.Integer, db.ForeignKey('staff.id'), nullable=False)
+    uploaded_at = db.Column(db.DateTime, default=db.func.now())
+    
+    document_type = db.Column(db.String(50), nullable=False)  # Lab Result, X-Ray, MRI, Consent Form, etc.
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    filename = db.Column(db.String(255), nullable=False)
+    file_path = db.Column(db.String(500), nullable=False)
+    file_size = db.Column(db.Integer)  # Size in bytes
+    mime_type = db.Column(db.String(100))  # e.g., application/pdf, image/jpeg
+    
+    patient = db.relationship('Patient', backref=db.backref('documents', lazy=True, cascade="all, delete-orphan"))
+    uploader = db.relationship('Staff', backref=db.backref('uploaded_documents', lazy=True))
+    
+    def __repr__(self):
+        return f'<MedicalDocument {self.title} for Patient #{self.patient_id}>'

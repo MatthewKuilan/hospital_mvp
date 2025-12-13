@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, render_template, request, redirect, url_for, flash
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from sqlalchemy import or_
-from models import db, Staff, Patient, Appointment, Invoice, InvoiceItem, Payment
+from models import db, Staff, Patient, Appointment, Invoice, InvoiceItem, Payment, VisitNote, Prescription, MedicalDocument
 from datetime import date, time, datetime
 import os
 
@@ -131,6 +131,156 @@ def seed_data():
     
     item5 = InvoiceItem(invoice_id=inv3.id, description="Follow-up Visit", qty=1, unit_price=100.00)
     db.session.add(item5)
+    db.session.commit()
+    
+    # ===== MEDICAL RECORDS SAMPLE DATA =====
+    
+    # Visit Notes for appointments
+    visit_note1 = VisitNote(
+        appointment_id=appt.id,
+        patient_id=patient1.id,
+        staff_id=staff2.id,
+        chief_complaint="Persistent headache for 3 days",
+        subjective="Patient reports throbbing headache, worse in the morning. Rates pain 6/10. No vision changes. Difficulty sleeping.",
+        objective="Alert and oriented. BP 130/85. Pupils equal and reactive. No neck stiffness. Cranial nerves intact.",
+        assessment="Tension-type headache. Rule out migraine. No red flags for serious pathology.",
+        plan="1. Ibuprofen 400mg every 6 hours as needed\n2. Increase water intake\n3. Sleep hygiene education provided\n4. Follow up in 2 weeks if not improving",
+        vitals_bp="130/85",
+        vitals_pulse=72,
+        vitals_temp=98.6,
+        vitals_weight=165
+    )
+    db.session.add(visit_note1)
+    
+    visit_note2 = VisitNote(
+        appointment_id=appt2.id,
+        patient_id=patient2.id,
+        staff_id=staff3.id,
+        chief_complaint="Annual physical exam",
+        subjective="No current complaints. Generally feeling well. Exercises 3x weekly. Non-smoker.",
+        objective="General: Well-appearing, no acute distress. Heart: Regular rate and rhythm. Lungs: Clear bilaterally.",
+        assessment="Healthy adult. Age-appropriate preventive care discussed.",
+        plan="1. Continue current lifestyle\n2. Flu vaccine administered\n3. Schedule mammogram\n4. Labs ordered: CBC, CMP, Lipid panel",
+        vitals_bp="118/76",
+        vitals_pulse=68,
+        vitals_temp=98.2,
+        vitals_weight=142
+    )
+    db.session.add(visit_note2)
+    db.session.commit()
+    
+    # Prescriptions
+    rx1 = Prescription(
+        patient_id=patient1.id,
+        staff_id=staff2.id,
+        visit_note_id=visit_note1.id,
+        medication_name="Ibuprofen",
+        dosage="400mg",
+        frequency="Every 6 hours as needed for pain",
+        duration="14 days",
+        quantity=60,
+        refills=1,
+        instructions="Take with food to reduce stomach upset. Do not exceed 2400mg daily.",
+        status="Active"
+    )
+    db.session.add(rx1)
+    
+    rx2 = Prescription(
+        patient_id=patient1.id,
+        staff_id=staff2.id,
+        visit_note_id=visit_note1.id,
+        medication_name="Melatonin",
+        dosage="5mg",
+        frequency="Once daily at bedtime",
+        duration="30 days",
+        quantity=30,
+        refills=2,
+        instructions="Take 30 minutes before sleep. Avoid screens before bedtime.",
+        status="Active"
+    )
+    db.session.add(rx2)
+    
+    rx3 = Prescription(
+        patient_id=patient2.id,
+        staff_id=staff3.id,
+        medication_name="Vitamin D3",
+        dosage="2000 IU",
+        frequency="Once daily with breakfast",
+        duration="90 days",
+        quantity=90,
+        refills=3,
+        instructions="Take with fatty food for better absorption.",
+        status="Active"
+    )
+    db.session.add(rx3)
+    
+    rx4 = Prescription(
+        patient_id=patient1.id,
+        staff_id=staff2.id,
+        medication_name="Amoxicillin",
+        dosage="500mg",
+        frequency="Three times daily",
+        duration="10 days",
+        quantity=30,
+        refills=0,
+        instructions="Complete entire course. Take with or without food.",
+        status="Completed"
+    )
+    db.session.add(rx4)
+    db.session.commit()
+    
+    # Medical Documents (simulated - no actual files)
+    doc1 = MedicalDocument(
+        patient_id=patient1.id,
+        uploaded_by=staff2.id,
+        document_type="Lab Result",
+        title="Comprehensive Metabolic Panel - December 2025",
+        description="Annual bloodwork results. All values within normal range.",
+        filename="alex_lee_cmp_dec2025.pdf",
+        file_path="/uploads/patients/1/alex_lee_cmp_dec2025.pdf",
+        file_size=245680,
+        mime_type="application/pdf"
+    )
+    db.session.add(doc1)
+    
+    doc2 = MedicalDocument(
+        patient_id=patient1.id,
+        uploaded_by=staff3.id,
+        document_type="X-Ray",
+        title="Chest X-Ray - PA and Lateral Views",
+        description="Pre-operative clearance imaging. Heart size normal, lungs clear.",
+        filename="alex_lee_chest_xray.jpg",
+        file_path="/uploads/patients/1/alex_lee_chest_xray.jpg",
+        file_size=1548920,
+        mime_type="image/jpeg"
+    )
+    db.session.add(doc2)
+    
+    doc3 = MedicalDocument(
+        patient_id=patient2.id,
+        uploaded_by=staff3.id,
+        document_type="Lab Result",
+        title="Lipid Panel - Annual Screening",
+        description="Cholesterol screening. LDL slightly elevated at 142 mg/dL.",
+        filename="priya_shah_lipid_panel.pdf",
+        file_path="/uploads/patients/2/priya_shah_lipid_panel.pdf",
+        file_size=189450,
+        mime_type="application/pdf"
+    )
+    db.session.add(doc3)
+    
+    doc4 = MedicalDocument(
+        patient_id=patient2.id,
+        uploaded_by=staff4.id,
+        document_type="Consent Form",
+        title="Surgical Consent Form - Signed",
+        description="Patient signed consent for upcoming procedure.",
+        filename="priya_shah_consent_signed.pdf",
+        file_path="/uploads/patients/2/priya_shah_consent_signed.pdf",
+        file_size=98760,
+        mime_type="application/pdf"
+    )
+    db.session.add(doc4)
     db.session.commit()
     
     print("Database seeded successfully.")
@@ -390,6 +540,142 @@ def global_search():
         })
     
     return jsonify(results)
+
+# ===== MEDICAL RECORDS ROUTES =====
+
+@app.route('/records')
+@login_required
+def records():
+    """Medical Records page - shows all patients with their records"""
+    patients = Patient.query.order_by(Patient.name).all()
+    return render_template('records.html', patients=patients)
+
+@app.route('/api/patient/<int:patient_id>/records')
+@login_required
+def patient_records(patient_id):
+    """Get comprehensive medical records for a patient"""
+    patient = Patient.query.get_or_404(patient_id)
+    
+    # Visit Notes
+    visit_notes = []
+    for note in patient.visit_notes:
+        visit_notes.append({
+            'id': note.id,
+            'date': note.created_at.strftime('%Y-%m-%d') if note.created_at else None,
+            'provider': note.staff.username,
+            'chief_complaint': note.chief_complaint,
+            'subjective': note.subjective,
+            'objective': note.objective,
+            'assessment': note.assessment,
+            'plan': note.plan,
+            'vitals': {
+                'bp': note.vitals_bp,
+                'pulse': note.vitals_pulse,
+                'temp': note.vitals_temp,
+                'weight': note.vitals_weight
+            } if note.vitals_bp else None
+        })
+    
+    # Prescriptions
+    prescriptions = []
+    for rx in patient.prescriptions:
+        prescriptions.append({
+            'id': rx.id,
+            'medication': rx.medication_name,
+            'dosage': rx.dosage,
+            'frequency': rx.frequency,
+            'duration': rx.duration,
+            'quantity': rx.quantity,
+            'refills': rx.refills,
+            'instructions': rx.instructions,
+            'provider': rx.staff.username,
+            'status': rx.status,
+            'date': rx.created_at.strftime('%Y-%m-%d') if rx.created_at else None
+        })
+    
+    # Documents
+    documents = []
+    for doc in patient.documents:
+        documents.append({
+            'id': doc.id,
+            'title': doc.title,
+            'type': doc.document_type,
+            'description': doc.description,
+            'filename': doc.filename,
+            'file_size': doc.file_size,
+            'uploaded_by': doc.uploader.username,
+            'date': doc.uploaded_at.strftime('%Y-%m-%d') if doc.uploaded_at else None
+        })
+    
+    return jsonify({
+        'patient': {
+            'id': patient.id,
+            'name': patient.name,
+            'dob': patient.dob.strftime('%Y-%m-%d') if patient.dob else None,
+            'chart_number': patient.chart_number
+        },
+        'visit_notes': visit_notes,
+        'prescriptions': prescriptions,
+        'documents': documents
+    })
+
+@app.route('/api/patient/<int:patient_id>/prescription', methods=['POST'])
+@login_required
+def add_prescription(patient_id):
+    """Add a new prescription for a patient"""
+    try:
+        data = request.get_json()
+        
+        rx = Prescription(
+            patient_id=patient_id,
+            staff_id=current_user.id,
+            medication_name=data.get('medication_name'),
+            dosage=data.get('dosage'),
+            frequency=data.get('frequency'),
+            duration=data.get('duration'),
+            quantity=data.get('quantity', 30),
+            refills=data.get('refills', 0),
+            instructions=data.get('instructions'),
+            status='Active'
+        )
+        
+        db.session.add(rx)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'id': rx.id})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/patient/<int:patient_id>/visit-note', methods=['POST'])
+@login_required
+def add_visit_note(patient_id):
+    """Add a new visit note for a patient"""
+    try:
+        data = request.get_json()
+        
+        note = VisitNote(
+            patient_id=patient_id,
+            appointment_id=data.get('appointment_id'),
+            staff_id=current_user.id,
+            chief_complaint=data.get('chief_complaint'),
+            subjective=data.get('subjective'),
+            objective=data.get('objective'),
+            assessment=data.get('assessment'),
+            plan=data.get('plan'),
+            vitals_bp=data.get('vitals_bp'),
+            vitals_pulse=data.get('vitals_pulse'),
+            vitals_temp=data.get('vitals_temp'),
+            vitals_weight=data.get('vitals_weight')
+        )
+        
+        db.session.add(note)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'id': note.id})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/patients')
 @login_required

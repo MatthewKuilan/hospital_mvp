@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="p-8 bg-gray-50 min-h-screen">
+
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800">Medical Records</h1>
+            <p class="text-gray-500">View patient visit notes, prescriptions, and documents.</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Patient List -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-blue-500 to-blue-600">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z">
+                        </path>
+                    </svg>
+                    Select Patient
+                </h3>
+            </div>
+            <div class="p-4">
+                <input type="text" id="patientSearch" placeholder="Search patients..."
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none mb-4">
+            </div>
+            <div class="divide-y divide-gray-100 max-h-[500px] overflow-y-auto" id="patientList">
+                {% for p in patients %}
+                <div class="px-6 py-4 flex items-center gap-4 hover:bg-blue-50 cursor-pointer transition patient-item"
+                    onclick="selectPatient({{ p.id }}, '{{ p.name }}')" data-name="{{ p.name.lower() }}">
+                    <div
+                        class="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                        {{ p.name[:2]|upper }}
+                    </div>
+                    <div>
+                        <p class="font-medium text-gray-800">{{ p.name }}</p>
+                        <p class="text-xs text-gray-400">Chart #{{ p.chart_number }}</p>
+                    </div>
+                </div>
+                {% else %}
+                <div class="px-6 py-8 text-center text-gray-400">
+                    No patients found.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Records Detail Panel -->
+        <div class="lg:col-span-2 space-y-6">
+
+            <!-- Empty State -->
+            <div id="emptyState" class="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+                <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                    </path>
+                </svg>
+                <p class="text-gray-400 text-lg">Select a patient to view their medical records</p>
+            </div>
+
+            <!-- Patient Header (hidden by default) -->
+            <div id="patientHeader"
+                class="hidden bg-gradient-to-r from-teal-500 to-blue-500 rounded-xl shadow-lg p-6 text-white">
+                <div class="flex items-center gap-4">
+                    <div id="patientAvatar"
+                        class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center text-2xl font-bold">
+                    </div>
+                    <div>
+                        <h2 id="patientName" class="text-2xl font-bold"></h2>
+                        <p id="patientMeta" class="text-teal-100 text-sm"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Navigation -->
+            <div id="tabNav" class="hidden bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="flex border-b border-gray-200">
+                    <button onclick="switchTab('notes')"
+                        class="tab-btn flex-1 px-6 py-4 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent transition"
+                        data-tab="notes">
+                        📝 Visit Notes (<span id="notesCount">0</span>)
+                    </button>
+                    <button onclick="switchTab('prescriptions')"
+                        class="tab-btn flex-1 px-6 py-4 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent transition"
+                        data-tab="prescriptions">
+                        💊 Prescriptions (<span id="rxCount">0</span>)
+                    </button>
+                    <button onclick="switchTab('documents')"
+                        class="tab-btn flex-1 px-6 py-4 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent transition"
+                        data-tab="documents">
+                        📎 Documents (<span id="docsCount">0</span>)
+                    </button>
+                </div>
+
+                <!-- Visit Notes Tab -->
+                <div id="notesTab" class="tab-content hidden p-6">
+                    <div id="notesList" class="space-y-4"></div>
+                </div>
+
+                <!-- Prescriptions Tab -->
+                <div id="prescriptionsTab" class="tab-content hidden p-6">
+                    <div id="rxList" class="space-y-4"></div>
+                </div>
+
+                <!-- Documents Tab -->
+                <div id="documentsTab" class="tab-content hidden p-6">
+                    <div id="docsList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<script>
+    let currentPatientId = null;
+    let recordsData = null;
+
+    // Patient search filter
+    document.getElementById('patientSearch').addEventListener('input', function () {
+        const query = this.value.toLowerCase();
+        document.querySelectorAll('.patient-item').forEach(item => {
+            const name = item.dataset.name;
+            item.style.display = name.includes(query) ? '' : 'none';
+        });
+    });
+
+    async function selectPatient(patientId, patientName) {
+        currentPatientId = patientId;
+
+        // Highlight selected patient
+        document.querySelectorAll('.patient-item').forEach(item => {
+            item.classList.remove('bg-blue-100');
+        });
+        event.currentTarget.classList.add('bg-blue-100');
+
+        // Show loading
+        document.getElementById('emptyState').classList.add('hidden');
+        document.getElementById('patientHeader').classList.remove('hidden');
+        document.getElementById('tabNav').classList.remove('hidden');
+
+        // Fetch records
+        try {
+            const response = await fetch(`/api/patient/${patientId}/records`);
+            recordsData = await response.json();
+
+            // Update header
+            document.getElementById('patientAvatar').textContent = recordsData.patient.name.substring(0, 2).toUpperCase();
+            document.getElementById('patientName').textContent = recordsData.patient.name;
+            document.getElementById('patientMeta').textContent = `DOB: ${formatDate(recordsData.patient.dob)} • Chart #${recordsData.patient.chart_number}`;
+
+            // Update counts
+            document.getElementById('notesCount').textContent = recordsData.visit_notes.length;
+            document.getElementById('rxCount').textContent = recordsData.prescriptions.length;
+            document.getElementById('docsCount').textContent = recordsData.documents.length;
+
+            // Render tabs
+            renderVisitNotes(recordsData.visit_notes);
+            renderPrescriptions(recordsData.prescriptions);
+            renderDocuments(recordsData.documents);
+
+            // Show first tab
+            switchTab('notes');
+
+        } catch (e) {
+            console.error('Error loading records:', e);
+        }
+    }
+
+    function switchTab(tabName) {
+        // Hide all tabs
+        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('text-teal-600', 'border-teal-600');
+            btn.classList.add('text-gray-500', 'border-transparent');
+        });
+
+        // Show selected tab
+        document.getElementById(`${tabName}Tab`).classList.remove('hidden');
+        const activeBtn = document.querySelector(`.tab-btn[data-tab="${tabName}"]`);
+        activeBtn.classList.remove('text-gray-500', 'border-transparent');
+        activeBtn.classList.add('text-teal-600', 'border-teal-600');
+    }
+
+    function renderVisitNotes(notes) {
+        const container = document.getElementById('notesList');
+        if (!notes.length) {
+            container.innerHTML = `<div class="text-center text-gray-400 py-8">No visit notes found.</div>`;
+            return;
+        }
+
+        container.innerHTML = notes.map(note => `
+            <div class="bg-gray-50 rounded-lg p-4 border border-gray-100">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <p class="font-bold text-gray-800">${note.chief_complaint || 'Visit Note'}</p>
+                        <p class="text-xs text-gray-400">${formatDate(note.date)} • ${note.provider}</p>
+                    </div>
+                    ${note.vitals ? `
+                    <div class="text-xs bg-white px-3 py-1 rounded-full border border-gray-200">
+                        <span class="text-red-500">♥</span> ${note.vitals.bp} • ${note.vitals.pulse} bpm • ${note.vitals.temp}°F
+                    </div>
+                    ` : ''}
+                </div>
+                
+                <div class="space-y-2 text-sm">
+                    ${note.subjective ? `<div><span class="font-semibold text-blue-600">S:</span> ${note.subjective}</div>` : ''}
+                    ${note.objective ? `<div><span class="font-semibold text-green-600">O:</span> ${note.objective}</div>` : ''}
+                    ${note.assessment ? `<div><span class="font-semibold text-orange-600">A:</span> ${note.assessment}</div>` : ''}
+                    ${note.plan ? `<div><span class="font-semibold text-purple-600">P:</span> <pre class="inline whitespace-pre-wrap">${note.plan}</pre></div>` : ''}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function renderPrescriptions(prescriptions) {
+        const container = document.getElementById('rxList');
+        if (!prescriptions.length) {
+            container.innerHTML = `<div class="text-center text-gray-400 py-8">No prescriptions found.</div>`;
+            return;
+        }
+
+        container.innerHTML = prescriptions.map(rx => `
+            <div class="bg-gray-50 rounded-lg p-4 border border-gray-100 flex items-start gap-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-lg flex items-center justify-center text-white text-xl">
+                    💊
+                </div>
+                <div class="flex-1">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="font-bold text-gray-800">${rx.medication} ${rx.dosage}</p>
+                            <p class="text-sm text-gray-600">${rx.frequency}</p>
+                        </div>
+                        <span class="px-2 py-1 text-xs rounded-full ${rx.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}">
+                            ${rx.status}
+                        </span>
+                    </div>
+                    <div class="mt-2 flex flex-wrap gap-3 text-xs text-gray-500">
+                        <span>📅 ${rx.duration || 'Ongoing'}</span>
+                        <span>📦 Qty: ${rx.quantity}</span>
+                        <span>🔄 Refills: ${rx.refills}</span>
+                        <span>👨‍⚕️ ${rx.provider}</span>
+                    </div>
+                    ${rx.instructions ? `<p class="mt-2 text-sm text-gray-600 italic">"${rx.instructions}"</p>` : ''}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function renderDocuments(documents) {
+        const container = document.getElementById('docsList');
+        if (!documents.length) {
+            container.innerHTML = `<div class="col-span-2 text-center text-gray-400 py-8">No documents found.</div>`;
+            return;
+        }
+
+        const typeIcons = {
+            'Lab Result': '🧪',
+            'X-Ray': '📷',
+            'MRI': '🧲',
+            'Consent Form': '📋',
+            'default': '📄'
+        };
+
+        container.innerHTML = documents.map(doc => `
+            <div class="bg-gray-50 rounded-lg p-4 border border-gray-100 hover:shadow-md transition cursor-pointer">
+                <div class="flex items-start gap-3">
+                    <div class="w-10 h-10 bg-white rounded-lg border border-gray-200 flex items-center justify-center text-xl">
+                        ${typeIcons[doc.type] || typeIcons['default']}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="font-medium text-gray-800 truncate">${doc.title}</p>
+                        <p class="text-xs text-gray-400">${doc.type} • ${formatFileSize(doc.file_size)}</p>
+                        <p class="text-xs text-gray-500 mt-1">${doc.description || ''}</p>
+                    </div>
+                </div>
+                <div class="mt-3 flex justify-between items-center text-xs text-gray-400">
+                    <span>Uploaded by ${doc.uploaded_by}</span>
+                    <span>${formatDate(doc.date)}</span>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function formatDate(dateStr) {
+        if (!dateStr) return 'N/A';
+        const date = new Date(dateStr + 'T00:00:00');
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    function formatFileSize(bytes) {
+        if (!bytes) return 'Unknown';
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    }
+</script>
+{% endblock %}
