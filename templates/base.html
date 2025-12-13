@@ -128,7 +128,7 @@
 
             <!-- UAT Controls (Dev Only) -->
             <div class="p-4 bg-gray-50 border-t border-gray-100">
-                <a href="{{ url_for('debug_reset') }}"
+                <button onclick="confirmResetDatabase()"
                     class="flex items-center justify-center gap-2 w-full text-center bg-white border border-gray-300 text-gray-600 text-sm font-medium py-2 rounded-lg shadow-sm hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -136,7 +136,7 @@
                         </path>
                     </svg>
                     Reset Database
-                </a>
+                </button>
             </div>
         </div>
     </aside>
@@ -198,6 +198,37 @@
 
             {% block content %}{% endblock %}
 
+        </div>
+
+        <!-- Global Confirmation Modal -->
+        <div id="confirmModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 transform transition-all">
+                <div class="p-6">
+                    <!-- Icon -->
+                    <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+                            </path>
+                        </svg>
+                    </div>
+                    <!-- Title -->
+                    <h3 id="confirmTitle" class="text-xl font-bold text-gray-800 text-center mb-2">Are you sure?</h3>
+                    <!-- Message -->
+                    <p id="confirmMessage" class="text-gray-500 text-center mb-6">This action cannot be undone.</p>
+                    <!-- Buttons -->
+                    <div class="flex gap-3">
+                        <button id="confirmCancel" onclick="closeConfirmModal()"
+                            class="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition">
+                            Cancel
+                        </button>
+                        <button id="confirmAction"
+                            class="flex-1 px-4 py-2.5 bg-red-500 text-white font-medium rounded-lg hover:bg-red-600 transition">
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         {% if current_user.is_authenticated %}
@@ -347,6 +378,77 @@
                     }
                 });
             })();
+        </script>
+
+        <!-- Confirmation Modal Script -->
+        <script>
+            let confirmCallback = null;
+
+            function showConfirm(options) {
+                const { title, message, confirmText, onConfirm, type = 'danger' } = options;
+
+                // Update modal content
+                document.getElementById('confirmTitle').textContent = title || 'Are you sure?';
+                document.getElementById('confirmMessage').textContent = message || 'This action cannot be undone.';
+
+                const actionBtn = document.getElementById('confirmAction');
+                actionBtn.textContent = confirmText || 'Delete';
+
+                // Style based on type
+                if (type === 'danger') {
+                    actionBtn.className = 'flex-1 px-4 py-2.5 bg-red-500 text-white font-medium rounded-lg hover:bg-red-600 transition';
+                } else if (type === 'warning') {
+                    actionBtn.className = 'flex-1 px-4 py-2.5 bg-orange-500 text-white font-medium rounded-lg hover:bg-orange-600 transition';
+                } else {
+                    actionBtn.className = 'flex-1 px-4 py-2.5 bg-blue-500 text-white font-medium rounded-lg hover:bg-blue-600 transition';
+                }
+
+                // Store callback
+                confirmCallback = onConfirm;
+
+                // Set up action button
+                actionBtn.onclick = function () {
+                    closeConfirmModal();
+                    if (confirmCallback) confirmCallback();
+                };
+
+                // Show modal with animation
+                const modal = document.getElementById('confirmModal');
+                modal.classList.remove('hidden');
+                modal.querySelector('.bg-white').style.transform = 'scale(1)';
+            }
+
+            function closeConfirmModal() {
+                document.getElementById('confirmModal').classList.add('hidden');
+                confirmCallback = null;
+            }
+
+            // Close on backdrop click
+            document.getElementById('confirmModal').addEventListener('click', function (e) {
+                if (e.target === this) {
+                    closeConfirmModal();
+                }
+            });
+
+            // Close on Escape key
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && !document.getElementById('confirmModal').classList.contains('hidden')) {
+                    closeConfirmModal();
+                }
+            });
+
+            // Database Reset Confirmation
+            function confirmResetDatabase() {
+                showConfirm({
+                    title: 'Reset Database?',
+                    message: 'This will delete ALL data and reset to sample data. This action cannot be undone!',
+                    confirmText: 'Reset Database',
+                    type: 'danger',
+                    onConfirm: () => {
+                        window.location.href = '{{ url_for("debug_reset") }}';
+                    }
+                });
+            }
         </script>
         {% endif %}
 

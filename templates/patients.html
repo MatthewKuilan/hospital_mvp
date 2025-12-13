@@ -479,19 +479,25 @@
         document.getElementById('modalError').classList.add('hidden');
     }
 
-    async function deletePatient(id) {
-        if (!confirm("Are you sure you want to delete this patient? This will also delete their appointments and invoices.")) return;
+    function deletePatient(id) {
+        showConfirm({
+            title: 'Delete Patient?',
+            message: 'This will permanently delete the patient and all their appointments, invoices, and records. This cannot be undone.',
+            confirmText: 'Delete Patient',
+            type: 'danger',
+            onConfirm: async () => {
+                const response = await fetch(`/patients/${id}`, {
+                    method: 'DELETE'
+                });
 
-        const response = await fetch(`/patients/${id}`, {
-            method: 'DELETE'
+                if (response.ok) {
+                    showToast("Patient deleted.");
+                    searchPatients();
+                } else {
+                    alert("Error deleting patient");
+                }
+            }
         });
-
-        if (response.ok) {
-            showToast("Patient deleted.");
-            searchPatients();
-        } else {
-            alert("Error deleting patient");
-        }
     }
 
     // Close modal on outside click
