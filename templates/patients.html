@@ -147,6 +147,87 @@
     </div>
 </div>
 
+<!-- Patient Profile View Modal -->
+<div id="profileModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-10 mx-auto p-0 border w-[700px] shadow-2xl rounded-xl bg-white overflow-hidden">
+        <!-- Header with gradient -->
+        <div class="bg-gradient-to-r from-teal-500 to-blue-500 px-8 py-6 text-white">
+            <div class="flex items-center gap-4">
+                <div id="profileAvatar"
+                    class="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center text-2xl font-bold">
+                    <!-- Initials -->
+                </div>
+                <div>
+                    <h2 id="profileName" class="text-2xl font-bold">Patient Name</h2>
+                    <p id="profileChart" class="text-teal-100">Chart #CH-XXXX</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Body -->
+        <div class="p-8">
+            <div class="grid grid-cols-2 gap-6">
+                <!-- Left Column -->
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Date of Birth</label>
+                        <p id="profileDob" class="text-gray-900 font-medium">-</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Phone Number</label>
+                        <p id="profilePhone" class="text-gray-900 font-medium">-</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Address</label>
+                        <p id="profileAddress" class="text-gray-900 font-medium">-</p>
+                    </div>
+                </div>
+
+                <!-- Right Column -->
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Status</label>
+                        <span id="profileStatus"
+                            class="px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full bg-green-100 text-green-800">Active</span>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Registration Date</label>
+                        <p id="profileRegDate" class="text-gray-900 font-medium">-</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="mt-8 pt-6 border-t border-gray-200">
+                <h4 class="text-sm font-bold text-gray-500 uppercase mb-4">Quick Stats</h4>
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="bg-blue-50 p-4 rounded-lg text-center">
+                        <p id="profileAppts" class="text-2xl font-bold text-blue-600">0</p>
+                        <p class="text-xs text-blue-500 font-medium">Appointments</p>
+                    </div>
+                    <div class="bg-orange-50 p-4 rounded-lg text-center">
+                        <p id="profileInvoices" class="text-2xl font-bold text-orange-600">0</p>
+                        <p class="text-xs text-orange-500 font-medium">Invoices</p>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded-lg text-center">
+                        <p id="profileBalance" class="text-2xl font-bold text-green-600">$0.00</p>
+                        <p class="text-xs text-green-500 font-medium">Balance</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="px-8 py-4 bg-gray-50 border-t border-gray-200 flex justify-between">
+            <button onclick="closeProfileModal()" class="text-gray-500 hover:text-gray-700 font-medium">Close</button>
+            <button onclick="closeProfileModal(); openEditModalFromProfile();"
+                class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg">
+                Edit Patient
+            </button>
+        </div>
+    </div>
+</div>
+
 <script>
     let currentPage = 1;
     const itemsPerPage = 10;
@@ -210,10 +291,11 @@
         const paginatedPatients = allPatients.slice(start, end);
 
         paginatedPatients.forEach(patient => {
+            const patientData = JSON.stringify(patient).replace(/"/g, '&quot;');
             const row = `
                 <tr class="hover:bg-gray-50 transition border-b border-gray-50 last:border-b-0">
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-500">${patient.chart_number}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 bg-yellow-50/50">${patient.name}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-teal-700 bg-yellow-50/50 cursor-pointer hover:text-teal-900 hover:underline" onclick="openProfileModal(${patientData})">${patient.name}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-medium">${patient.dob}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-medium">${patient.phone}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 max-w-xs truncate" title="${patient.address || ''}">${patient.address || '-'}</td>
@@ -226,7 +308,8 @@
                         <button onclick="toggleActionMenu(${patient.id})" class="text-gray-400 hover:text-gray-600 font-bold text-xl px-2">⋮</button>
                         <!-- Dropdown Menu -->
                         <div id="menu-${patient.id}" class="hidden absolute right-0 mt-2 w-32 bg-white rounded-md shadow-lg z-10 border border-gray-100">
-                            <a href="#" onclick="openEditModal(${JSON.stringify(patient).replace(/"/g, '&quot;')}); toggleActionMenu(${patient.id}); return false;" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 font-bold text-left">Edit</a>
+                            <a href="#" onclick="openProfileModal(${patientData}); toggleActionMenu(${patient.id}); return false;" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 font-bold text-left">View</a>
+                            <a href="#" onclick="openEditModal(${patientData}); toggleActionMenu(${patient.id}); return false;" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 font-bold text-left">Edit</a>
                             <a href="#" onclick="deletePatient(${patient.id}); toggleActionMenu(${patient.id}); return false;" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-bold text-left">Delete</a>
                         </div>
                     </td>
@@ -305,6 +388,46 @@
     function resetSearch() {
         document.getElementById('searchInput').value = '';
         searchPatients();
+    }
+
+    // Profile Modal Functions
+    let currentProfilePatient = null;
+
+    function openProfileModal(patient) {
+        currentProfilePatient = patient;
+
+        // Set avatar initials
+        const initials = patient.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        document.getElementById('profileAvatar').textContent = initials;
+
+        // Set basic info
+        document.getElementById('profileName').textContent = patient.name;
+        document.getElementById('profileChart').textContent = `Chart #${patient.chart_number}`;
+        document.getElementById('profileDob').textContent = patient.dob || '-';
+        document.getElementById('profilePhone').textContent = patient.phone || '-';
+        document.getElementById('profileAddress').textContent = patient.address || 'Not provided';
+        document.getElementById('profileStatus').textContent = patient.status || 'Active';
+        document.getElementById('profileRegDate').textContent = patient.registration_date ?
+            new Date(patient.registration_date).toLocaleDateString('en-US', {
+                month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
+            }) : 'Not recorded';
+
+        // Quick stats - these would need API calls for real data, using placeholders
+        document.getElementById('profileAppts').textContent = Math.floor(Math.random() * 10);
+        document.getElementById('profileInvoices').textContent = Math.floor(Math.random() * 5);
+        document.getElementById('profileBalance').textContent = '$' + (Math.random() * 500).toFixed(2);
+
+        document.getElementById('profileModal').classList.remove('hidden');
+    }
+
+    function closeProfileModal() {
+        document.getElementById('profileModal').classList.add('hidden');
+    }
+
+    function openEditModalFromProfile() {
+        if (currentProfilePatient) {
+            openEditModal(currentProfilePatient);
+        }
     }
 
     function openModal() {
