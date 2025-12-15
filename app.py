@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, render_template, request, redirect, url_for, flash
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from sqlalchemy import or_
-from models import db, Staff, Patient, Appointment, Invoice, InvoiceItem, Payment, VisitNote, Prescription, MedicalDocument
+from models import db, Staff, Patient, Appointment, Invoice, InvoiceItem, Payment, VisitNote, Prescription, MedicalDocument, LabResult
 from datetime import date, time, datetime
 import os
 
@@ -607,6 +607,24 @@ def patient_records(patient_id):
             'date': doc.uploaded_at.strftime('%Y-%m-%d') if doc.uploaded_at else None
         })
     
+    # Lab Results
+    lab_results = []
+    for lab in patient.lab_results:
+        lab_results.append({
+            'id': lab.id,
+            'test_type': lab.test_type,
+            'test_code': lab.test_code,
+            'status': lab.status,
+            'priority': lab.priority,
+            'results': lab.results,
+            'notes': lab.notes,
+            'reference_range': lab.reference_range,
+            'abnormal_flag': lab.abnormal_flag,
+            'ordered_by': lab.orderer.username,
+            'created_at': lab.created_at.strftime('%Y-%m-%d') if lab.created_at else None,
+            'result_date': lab.result_date.strftime('%Y-%m-%d') if lab.result_date else None
+        })
+    
     return jsonify({
         'patient': {
             'id': patient.id,
@@ -616,7 +634,8 @@ def patient_records(patient_id):
         },
         'visit_notes': visit_notes,
         'prescriptions': prescriptions,
-        'documents': documents
+        'documents': documents,
+        'lab_results': lab_results
     })
 
 @app.route('/api/patient/<int:patient_id>/prescription', methods=['POST'])
@@ -673,6 +692,195 @@ def add_visit_note(patient_id):
         db.session.commit()
         
         return jsonify({'success': True, 'id': note.id})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+# ===== LAB RESULTS ROUTES =====
+
+@app.route('/api/patient/<int:patient_id>/lab-results', methods=['GET'])
+@login_required
+def get_lab_results(patient_id):
+    """Get all lab results for a patient"""
+    patient = Patient.query.get_or_404(patient_id)
+    
+    lab_results = []
+    for lab in patient.lab_results:
+        lab_results.append({
+            'id': lab.id,
+            'test_type': lab.test_type,
+            'test_code': lab.test_code,
+            'status': lab.status,
+            'priority': lab.priority,
+            'results': lab.results,
+            'notes': lab.notes,
+            'reference_range': lab.reference_range,
+            'abnormal_flag': lab.abnormal_flag,
+            'ordered_by': lab.orderer.username,
+            'created_at': lab.created_at.strftime('%Y-%m-%d') if lab.created_at else None,
+            'result_date': lab.result_date.strftime('%Y-%m-%d') if lab.result_date else None
+        })
+    
+    return jsonify(lab_results)
+
+@app.route('/api/patient/<int:patient_id>/lab-results', methods=['POST'])
+@login_required
+def add_lab_result(patient_id):
+    """Order a new lab test for a patient"""
+    try:
+        data = request.get_json()
+        
+        lab = LabResult(
+            patient_id=patient_id,
+            ordered_by=current_user.id,
+            test_type=data.get('test_type'),
+            test_code=data.get('test_code'),
+            priority=data.get('priority', 'Routine'),
+            notes=data.get('notes'),
+            status='Ordered'
+        )
+        
+        db.session.add(lab)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'id': lab.id})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/lab-results/<int:id>', methods=['PUT'])
+@login_required
+def update_lab_result(id):
+    """Update a lab result (add results, change status)"""
+    try:
+        lab = LabResult.query.get_or_404(id)
+        data = request.get_json()
+        
+        if 'status' in data:
+            lab.status = data['status']
+        if 'results' in data:
+            lab.results = data['results']
+        if 'notes' in data:
+            lab.notes = data['notes']
+        if 'reference_range' in data:
+            lab.reference_range = data['reference_range']
+        if 'abnormal_flag' in data:
+            lab.abnormal_flag = data['abnormal_flag']
+        if 'result_date' in data and data['result_date']:
+            lab.result_date = datetime.strptime(data['result_date'], '%Y-%m-%d')
+        
+        db.session.commit()
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/lab-results/<int:id>', methods=['DELETE'])
+@login_required
+def delete_lab_result(id):
+    """Delete a lab result"""
+    try:
+        lab = LabResult.query.get_or_404(id)
+        db.session.delete(lab)
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+# ===== VISIT NOTES UPDATE/DELETE =====
+
+@app.route('/api/visit-note/<int:id>', methods=['PUT'])
+@login_required
+def update_visit_note(id):
+    """Update an existing visit note"""
+    try:
+        note = VisitNote.query.get_or_404(id)
+        data = request.get_json()
+        
+        if 'chief_complaint' in data:
+            note.chief_complaint = data['chief_complaint']
+        if 'subjective' in data:
+            note.subjective = data['subjective']
+        if 'objective' in data:
+            note.objective = data['objective']
+        if 'assessment' in data:
+            note.assessment = data['assessment']
+        if 'plan' in data:
+            note.plan = data['plan']
+        if 'vitals_bp' in data:
+            note.vitals_bp = data['vitals_bp']
+        if 'vitals_pulse' in data:
+            note.vitals_pulse = data['vitals_pulse']
+        if 'vitals_temp' in data:
+            note.vitals_temp = data['vitals_temp']
+        if 'vitals_weight' in data:
+            note.vitals_weight = data['vitals_weight']
+        
+        db.session.commit()
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/visit-note/<int:id>', methods=['DELETE'])
+@login_required
+def delete_visit_note(id):
+    """Delete a visit note"""
+    try:
+        note = VisitNote.query.get_or_404(id)
+        db.session.delete(note)
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+# ===== PRESCRIPTIONS UPDATE/DELETE =====
+
+@app.route('/api/prescription/<int:id>', methods=['PUT'])
+@login_required
+def update_prescription(id):
+    """Update an existing prescription"""
+    try:
+        rx = Prescription.query.get_or_404(id)
+        data = request.get_json()
+        
+        if 'medication_name' in data:
+            rx.medication_name = data['medication_name']
+        if 'dosage' in data:
+            rx.dosage = data['dosage']
+        if 'frequency' in data:
+            rx.frequency = data['frequency']
+        if 'duration' in data:
+            rx.duration = data['duration']
+        if 'quantity' in data:
+            rx.quantity = data['quantity']
+        if 'refills' in data:
+            rx.refills = data['refills']
+        if 'instructions' in data:
+            rx.instructions = data['instructions']
+        if 'status' in data:
+            rx.status = data['status']
+        
+        db.session.commit()
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/prescription/<int:id>', methods=['DELETE'])
+@login_required
+def delete_prescription(id):
+    """Delete a prescription"""
+    try:
+        rx = Prescription.query.get_or_404(id)
+        db.session.delete(rx)
+        db.session.commit()
+        return jsonify({'success': True})
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500

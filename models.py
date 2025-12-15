@@ -158,3 +158,27 @@ class MedicalDocument(db.Model):
     
     def __repr__(self):
         return f'<MedicalDocument {self.title} for Patient #{self.patient_id}>'
+
+class LabResult(db.Model):
+    """Lab test orders and results"""
+    id = db.Column(db.Integer, primary_key=True)
+    patient_id = db.Column(db.Integer, db.ForeignKey('patient.id'), nullable=False)
+    ordered_by = db.Column(db.Integer, db.ForeignKey('staff.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=db.func.now())
+    result_date = db.Column(db.DateTime, nullable=True)
+    
+    test_type = db.Column(db.String(100), nullable=False)  # CBC, Lipid Panel, Metabolic Panel, etc.
+    test_code = db.Column(db.String(20))  # Lab code like "CBC", "CMP", "LIP"
+    status = db.Column(db.String(20), default='Ordered')  # Ordered, Pending, Completed
+    priority = db.Column(db.String(20), default='Routine')  # Routine, Urgent, STAT
+    
+    results = db.Column(db.Text)  # Test results (can be JSON or structured text)
+    notes = db.Column(db.Text)  # Clinical notes / interpretation
+    reference_range = db.Column(db.String(200))  # Normal reference range
+    abnormal_flag = db.Column(db.Boolean, default=False)  # Flag if results are abnormal
+    
+    patient = db.relationship('Patient', backref=db.backref('lab_results', lazy=True, cascade="all, delete-orphan"))
+    orderer = db.relationship('Staff', backref=db.backref('ordered_labs', lazy=True))
+    
+    def __repr__(self):
+        return f'<LabResult {self.test_type} for Patient #{self.patient_id}>'

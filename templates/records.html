@@ -7,7 +7,7 @@
     <div class="flex justify-between items-center mb-8">
         <div>
             <h1 class="text-3xl font-bold text-gray-800">Medical Records</h1>
-            <p class="text-gray-500">View patient visit notes, prescriptions, and documents.</p>
+            <p class="text-gray-500">View and manage patient visit notes, prescriptions, lab results, and documents.</p>
         </div>
     </div>
 
@@ -66,13 +66,30 @@
             <!-- Patient Header (hidden by default) -->
             <div id="patientHeader"
                 class="hidden bg-gradient-to-r from-teal-500 to-blue-500 rounded-xl shadow-lg p-6 text-white">
-                <div class="flex items-center gap-4">
-                    <div id="patientAvatar"
-                        class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center text-2xl font-bold">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div id="patientAvatar"
+                            class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center text-2xl font-bold">
+                        </div>
+                        <div>
+                            <h2 id="patientName" class="text-2xl font-bold"></h2>
+                            <p id="patientMeta" class="text-teal-100 text-sm"></p>
+                        </div>
                     </div>
-                    <div>
-                        <h2 id="patientName" class="text-2xl font-bold"></h2>
-                        <p id="patientMeta" class="text-teal-100 text-sm"></p>
+                    <!-- Action Buttons -->
+                    <div class="flex gap-2">
+                        <button onclick="openNoteModal()"
+                            class="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition flex items-center gap-2">
+                            📝 Add Note
+                        </button>
+                        <button onclick="openRxModal()"
+                            class="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition flex items-center gap-2">
+                            💊 Add Rx
+                        </button>
+                        <button onclick="openLabModal()"
+                            class="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition flex items-center gap-2">
+                            🧪 Order Lab
+                        </button>
                     </div>
                 </div>
             </div>
@@ -89,6 +106,11 @@
                         class="tab-btn flex-1 px-6 py-4 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent transition"
                         data-tab="prescriptions">
                         💊 Prescriptions (<span id="rxCount">0</span>)
+                    </button>
+                    <button onclick="switchTab('labs')"
+                        class="tab-btn flex-1 px-6 py-4 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent transition"
+                        data-tab="labs">
+                        🧪 Lab Results (<span id="labsCount">0</span>)
                     </button>
                     <button onclick="switchTab('documents')"
                         class="tab-btn flex-1 px-6 py-4 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent transition"
@@ -107,6 +129,11 @@
                     <div id="rxList" class="space-y-4"></div>
                 </div>
 
+                <!-- Lab Results Tab -->
+                <div id="labsTab" class="tab-content hidden p-6">
+                    <div id="labsList" class="space-y-4"></div>
+                </div>
+
                 <!-- Documents Tab -->
                 <div id="documentsTab" class="tab-content hidden p-6">
                     <div id="docsList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
@@ -118,9 +145,215 @@
 
 </div>
 
+<!-- Visit Note Modal -->
+<div id="noteModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto m-4">
+        <div
+            class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gradient-to-r from-blue-500 to-blue-600 rounded-t-2xl">
+            <h3 class="text-lg font-bold text-white" id="noteModalTitle">Add Visit Note</h3>
+            <button onclick="closeNoteModal()" class="text-white/80 hover:text-white text-2xl">&times;</button>
+        </div>
+        <form id="noteForm" class="p-6 space-y-4">
+            <input type="hidden" id="noteId">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Chief Complaint *</label>
+                <input type="text" id="noteChiefComplaint" required
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            </div>
+            <div class="grid grid-cols-4 gap-3">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">BP</label>
+                    <input type="text" id="noteBP" placeholder="120/80"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Pulse</label>
+                    <input type="text" id="notePulse" placeholder="72"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Temp (°F)</label>
+                    <input type="text" id="noteTemp" placeholder="98.6"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Weight</label>
+                    <input type="text" id="noteWeight" placeholder="150 lbs"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Subjective</label>
+                <textarea id="noteSubjective" rows="2"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Objective</label>
+                <textarea id="noteObjective" rows="2"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Assessment</label>
+                <textarea id="noteAssessment" rows="2"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Plan</label>
+                <textarea id="notePlan" rows="3"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
+            </div>
+            <div class="flex justify-end gap-3 pt-4">
+                <button type="button" onclick="closeNoteModal()"
+                    class="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium">Cancel</button>
+                <button type="submit"
+                    class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition">Save
+                    Note</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Prescription Modal -->
+<div id="rxModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto m-4">
+        <div
+            class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gradient-to-r from-green-500 to-green-600 rounded-t-2xl">
+            <h3 class="text-lg font-bold text-white" id="rxModalTitle">Add Prescription</h3>
+            <button onclick="closeRxModal()" class="text-white/80 hover:text-white text-2xl">&times;</button>
+        </div>
+        <form id="rxForm" class="p-6 space-y-4">
+            <input type="hidden" id="rxId">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Medication Name *</label>
+                <input type="text" id="rxMedication" required
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none">
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Dosage *</label>
+                    <input type="text" id="rxDosage" required placeholder="e.g., 500mg"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Frequency *</label>
+                    <input type="text" id="rxFrequency" required placeholder="e.g., Twice daily"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none">
+                </div>
+            </div>
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Duration</label>
+                    <input type="text" id="rxDuration" placeholder="e.g., 7 days"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                    <input type="number" id="rxQuantity" placeholder="30"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Refills</label>
+                    <input type="number" id="rxRefills" value="0"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Instructions</label>
+                <textarea id="rxInstructions" rows="2" placeholder="Take with food..."
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"></textarea>
+            </div>
+            <div class="flex justify-end gap-3 pt-4">
+                <button type="button" onclick="closeRxModal()"
+                    class="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium">Cancel</button>
+                <button type="submit"
+                    class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition">Save
+                    Prescription</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Lab Order Modal -->
+<div id="labModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto m-4">
+        <div
+            class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gradient-to-r from-purple-500 to-purple-600 rounded-t-2xl">
+            <h3 class="text-lg font-bold text-white" id="labModalTitle">Order Lab Test</h3>
+            <button onclick="closeLabModal()" class="text-white/80 hover:text-white text-2xl">&times;</button>
+        </div>
+        <form id="labForm" class="p-6 space-y-4">
+            <input type="hidden" id="labId">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Test Type *</label>
+                <select id="labTestType" required
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none">
+                    <option value="">Select test type...</option>
+                    <option value="CBC">CBC (Complete Blood Count)</option>
+                    <option value="Metabolic Panel">Metabolic Panel</option>
+                    <option value="Lipid Panel">Lipid Panel</option>
+                    <option value="Thyroid Panel">Thyroid Panel</option>
+                    <option value="Urinalysis">Urinalysis</option>
+                    <option value="A1C">Hemoglobin A1C</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Test Code</label>
+                    <input type="text" id="labTestCode" placeholder="e.g., CBC"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                    <select id="labPriority"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none">
+                        <option value="Routine">Routine</option>
+                        <option value="Urgent">Urgent</option>
+                        <option value="STAT">STAT</option>
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Clinical Notes</label>
+                <textarea id="labNotes" rows="2" placeholder="Reason for test, relevant history..."
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"></textarea>
+            </div>
+            <div class="flex justify-end gap-3 pt-4">
+                <button type="button" onclick="closeLabModal()"
+                    class="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium">Cancel</button>
+                <button type="submit"
+                    class="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition">Order
+                    Lab</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm m-4 p-6 text-center">
+        <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                </path>
+            </svg>
+        </div>
+        <h3 class="text-xl font-bold text-gray-800 mb-2">Delete Record?</h3>
+        <p class="text-gray-500 mb-6" id="deleteMessage">This action cannot be undone.</p>
+        <div class="flex gap-3">
+            <button onclick="closeDeleteModal()"
+                class="flex-1 px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition">Cancel</button>
+            <button onclick="confirmDelete()"
+                class="flex-1 px-4 py-2 bg-red-500 text-white font-medium rounded-lg hover:bg-red-600 transition">Delete</button>
+        </div>
+    </div>
+</div>
+
 <script>
     let currentPatientId = null;
     let recordsData = null;
+    let deleteCallback = null;
 
     // Patient search filter
     document.getElementById('patientSearch').addEventListener('input', function () {
@@ -158,11 +391,13 @@
             // Update counts
             document.getElementById('notesCount').textContent = recordsData.visit_notes.length;
             document.getElementById('rxCount').textContent = recordsData.prescriptions.length;
+            document.getElementById('labsCount').textContent = recordsData.lab_results.length;
             document.getElementById('docsCount').textContent = recordsData.documents.length;
 
             // Render tabs
             renderVisitNotes(recordsData.visit_notes);
             renderPrescriptions(recordsData.prescriptions);
+            renderLabResults(recordsData.lab_results);
             renderDocuments(recordsData.documents);
 
             // Show first tab
@@ -191,7 +426,7 @@
     function renderVisitNotes(notes) {
         const container = document.getElementById('notesList');
         if (!notes.length) {
-            container.innerHTML = `<div class="text-center text-gray-400 py-8">No visit notes found.</div>`;
+            container.innerHTML = `<div class="text-center text-gray-400 py-8">No visit notes found. Click "Add Note" to create one.</div>`;
             return;
         }
 
@@ -202,11 +437,15 @@
                         <p class="font-bold text-gray-800">${note.chief_complaint || 'Visit Note'}</p>
                         <p class="text-xs text-gray-400">${formatDate(note.date)} • ${note.provider}</p>
                     </div>
-                    ${note.vitals ? `
-                    <div class="text-xs bg-white px-3 py-1 rounded-full border border-gray-200">
-                        <span class="text-red-500">♥</span> ${note.vitals.bp} • ${note.vitals.pulse} bpm • ${note.vitals.temp}°F
+                    <div class="flex items-center gap-2">
+                        ${note.vitals ? `
+                        <div class="text-xs bg-white px-3 py-1 rounded-full border border-gray-200">
+                            <span class="text-red-500">♥</span> ${note.vitals.bp} • ${note.vitals.pulse} bpm • ${note.vitals.temp}°F
+                        </div>
+                        ` : ''}
+                        <button onclick="editNote(${note.id})" class="text-blue-500 hover:text-blue-700 p-1" title="Edit">✏️</button>
+                        <button onclick="deleteRecord('visit-note', ${note.id})" class="text-red-500 hover:text-red-700 p-1" title="Delete">🗑️</button>
                     </div>
-                    ` : ''}
                 </div>
                 
                 <div class="space-y-2 text-sm">
@@ -222,7 +461,7 @@
     function renderPrescriptions(prescriptions) {
         const container = document.getElementById('rxList');
         if (!prescriptions.length) {
-            container.innerHTML = `<div class="text-center text-gray-400 py-8">No prescriptions found.</div>`;
+            container.innerHTML = `<div class="text-center text-gray-400 py-8">No prescriptions found. Click "Add Rx" to create one.</div>`;
             return;
         }
 
@@ -237,9 +476,13 @@
                             <p class="font-bold text-gray-800">${rx.medication} ${rx.dosage}</p>
                             <p class="text-sm text-gray-600">${rx.frequency}</p>
                         </div>
-                        <span class="px-2 py-1 text-xs rounded-full ${rx.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}">
-                            ${rx.status}
-                        </span>
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-1 text-xs rounded-full ${rx.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}">
+                                ${rx.status}
+                            </span>
+                            <button onclick="editRx(${rx.id})" class="text-blue-500 hover:text-blue-700 p-1" title="Edit">✏️</button>
+                            <button onclick="deleteRecord('prescription', ${rx.id})" class="text-red-500 hover:text-red-700 p-1" title="Delete">🗑️</button>
+                        </div>
                     </div>
                     <div class="mt-2 flex flex-wrap gap-3 text-xs text-gray-500">
                         <span>📅 ${rx.duration || 'Ongoing'}</span>
@@ -249,6 +492,62 @@
                     </div>
                     ${rx.instructions ? `<p class="mt-2 text-sm text-gray-600 italic">"${rx.instructions}"</p>` : ''}
                 </div>
+            </div>
+        `).join('');
+    }
+
+    function renderLabResults(labs) {
+        const container = document.getElementById('labsList');
+        if (!labs.length) {
+            container.innerHTML = `<div class="text-center text-gray-400 py-8">No lab results found. Click "Order Lab" to order a test.</div>`;
+            return;
+        }
+
+        const statusColors = {
+            'Ordered': 'bg-blue-100 text-blue-700',
+            'Pending': 'bg-yellow-100 text-yellow-700',
+            'Completed': 'bg-green-100 text-green-700'
+        };
+
+        const priorityColors = {
+            'Routine': 'bg-gray-100 text-gray-600',
+            'Urgent': 'bg-orange-100 text-orange-700',
+            'STAT': 'bg-red-100 text-red-700'
+        };
+
+        container.innerHTML = labs.map(lab => `
+            <div class="bg-gray-50 rounded-lg p-4 border border-gray-100 ${lab.abnormal_flag ? 'border-red-300' : ''}">
+                <div class="flex justify-between items-start mb-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg flex items-center justify-center text-white text-lg">
+                            🧪
+                        </div>
+                        <div>
+                            <p class="font-bold text-gray-800">${lab.test_type}</p>
+                            <p class="text-xs text-gray-400">${lab.test_code ? `Code: ${lab.test_code} • ` : ''}Ordered: ${formatDate(lab.created_at)}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="px-2 py-1 text-xs rounded-full ${statusColors[lab.status] || 'bg-gray-100 text-gray-600'}">
+                            ${lab.status}
+                        </span>
+                        <span class="px-2 py-1 text-xs rounded-full ${priorityColors[lab.priority] || 'bg-gray-100 text-gray-600'}">
+                            ${lab.priority}
+                        </span>
+                        ${lab.abnormal_flag ? '<span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-700">⚠️ Abnormal</span>' : ''}
+                        <button onclick="editLab(${lab.id})" class="text-blue-500 hover:text-blue-700 p-1" title="Edit">✏️</button>
+                        <button onclick="deleteRecord('lab-results', ${lab.id})" class="text-red-500 hover:text-red-700 p-1" title="Delete">🗑️</button>
+                    </div>
+                </div>
+                ${lab.results ? `
+                <div class="bg-white p-3 rounded-lg border border-gray-200 mb-2">
+                    <p class="text-sm font-medium text-gray-700">Results:</p>
+                    <p class="text-sm text-gray-600">${lab.results}</p>
+                    ${lab.reference_range ? `<p class="text-xs text-gray-400 mt-1">Reference: ${lab.reference_range}</p>` : ''}
+                </div>
+                ` : ''}
+                ${lab.notes ? `<p class="text-sm text-gray-500 italic">${lab.notes}</p>` : ''}
+                <p class="text-xs text-gray-400 mt-2">Ordered by: ${lab.ordered_by}</p>
             </div>
         `).join('');
     }
@@ -288,6 +587,226 @@
         `).join('');
     }
 
+    // Modal functions
+    function openNoteModal() {
+        document.getElementById('noteModalTitle').textContent = 'Add Visit Note';
+        document.getElementById('noteForm').reset();
+        document.getElementById('noteId').value = '';
+        document.getElementById('noteModal').classList.remove('hidden');
+    }
+
+    function closeNoteModal() {
+        document.getElementById('noteModal').classList.add('hidden');
+    }
+
+    function openRxModal() {
+        document.getElementById('rxModalTitle').textContent = 'Add Prescription';
+        document.getElementById('rxForm').reset();
+        document.getElementById('rxId').value = '';
+        document.getElementById('rxModal').classList.remove('hidden');
+    }
+
+    function closeRxModal() {
+        document.getElementById('rxModal').classList.add('hidden');
+    }
+
+    function openLabModal() {
+        document.getElementById('labModalTitle').textContent = 'Order Lab Test';
+        document.getElementById('labForm').reset();
+        document.getElementById('labId').value = '';
+        document.getElementById('labModal').classList.remove('hidden');
+    }
+
+    function closeLabModal() {
+        document.getElementById('labModal').classList.add('hidden');
+    }
+
+    function closeDeleteModal() {
+        document.getElementById('deleteModal').classList.add('hidden');
+        deleteCallback = null;
+    }
+
+    // Edit functions
+    function editNote(id) {
+        const note = recordsData.visit_notes.find(n => n.id === id);
+        if (!note) return;
+
+        document.getElementById('noteModalTitle').textContent = 'Edit Visit Note';
+        document.getElementById('noteId').value = id;
+        document.getElementById('noteChiefComplaint').value = note.chief_complaint || '';
+        document.getElementById('noteBP').value = note.vitals?.bp || '';
+        document.getElementById('notePulse').value = note.vitals?.pulse || '';
+        document.getElementById('noteTemp').value = note.vitals?.temp || '';
+        document.getElementById('noteWeight').value = note.vitals?.weight || '';
+        document.getElementById('noteSubjective').value = note.subjective || '';
+        document.getElementById('noteObjective').value = note.objective || '';
+        document.getElementById('noteAssessment').value = note.assessment || '';
+        document.getElementById('notePlan').value = note.plan || '';
+        document.getElementById('noteModal').classList.remove('hidden');
+    }
+
+    function editRx(id) {
+        const rx = recordsData.prescriptions.find(r => r.id === id);
+        if (!rx) return;
+
+        document.getElementById('rxModalTitle').textContent = 'Edit Prescription';
+        document.getElementById('rxId').value = id;
+        document.getElementById('rxMedication').value = rx.medication || '';
+        document.getElementById('rxDosage').value = rx.dosage || '';
+        document.getElementById('rxFrequency').value = rx.frequency || '';
+        document.getElementById('rxDuration').value = rx.duration || '';
+        document.getElementById('rxQuantity').value = rx.quantity || '';
+        document.getElementById('rxRefills').value = rx.refills || 0;
+        document.getElementById('rxInstructions').value = rx.instructions || '';
+        document.getElementById('rxModal').classList.remove('hidden');
+    }
+
+    function editLab(id) {
+        const lab = recordsData.lab_results.find(l => l.id === id);
+        if (!lab) return;
+
+        document.getElementById('labModalTitle').textContent = 'Edit Lab Result';
+        document.getElementById('labId').value = id;
+        document.getElementById('labTestType').value = lab.test_type || '';
+        document.getElementById('labTestCode').value = lab.test_code || '';
+        document.getElementById('labPriority').value = lab.priority || 'Routine';
+        document.getElementById('labNotes').value = lab.notes || '';
+        document.getElementById('labModal').classList.remove('hidden');
+    }
+
+    // Delete functions
+    function deleteRecord(type, id) {
+        document.getElementById('deleteMessage').textContent = 'This action cannot be undone.';
+        deleteCallback = async () => {
+            try {
+                const response = await fetch(`/api/${type}/${id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    selectPatient(currentPatientId, recordsData.patient.name);
+                    showToast('Record deleted successfully');
+                } else {
+                    showToast('Error deleting record', 'error');
+                }
+            } catch (e) {
+                showToast('Error deleting record', 'error');
+            }
+            closeDeleteModal();
+        };
+        document.getElementById('deleteModal').classList.remove('hidden');
+    }
+
+    function confirmDelete() {
+        if (deleteCallback) deleteCallback();
+    }
+
+    // Form submissions
+    document.getElementById('noteForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const noteId = document.getElementById('noteId').value;
+        const isEdit = !!noteId;
+
+        const data = {
+            chief_complaint: document.getElementById('noteChiefComplaint').value,
+            vitals_bp: document.getElementById('noteBP').value,
+            vitals_pulse: document.getElementById('notePulse').value,
+            vitals_temp: document.getElementById('noteTemp').value,
+            vitals_weight: document.getElementById('noteWeight').value,
+            subjective: document.getElementById('noteSubjective').value,
+            objective: document.getElementById('noteObjective').value,
+            assessment: document.getElementById('noteAssessment').value,
+            plan: document.getElementById('notePlan').value
+        };
+
+        try {
+            const url = isEdit ? `/api/visit-note/${noteId}` : `/api/patient/${currentPatientId}/visit-note`;
+            const method = isEdit ? 'PUT' : 'POST';
+            const response = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                closeNoteModal();
+                selectPatient(currentPatientId, recordsData.patient.name);
+                showToast(isEdit ? 'Note updated!' : 'Note added!');
+            } else {
+                showToast('Error saving note', 'error');
+            }
+        } catch (e) {
+            showToast('Error saving note', 'error');
+        }
+    });
+
+    document.getElementById('rxForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const rxId = document.getElementById('rxId').value;
+        const isEdit = !!rxId;
+
+        const data = {
+            medication_name: document.getElementById('rxMedication').value,
+            dosage: document.getElementById('rxDosage').value,
+            frequency: document.getElementById('rxFrequency').value,
+            duration: document.getElementById('rxDuration').value,
+            quantity: parseInt(document.getElementById('rxQuantity').value) || 0,
+            refills: parseInt(document.getElementById('rxRefills').value) || 0,
+            instructions: document.getElementById('rxInstructions').value
+        };
+
+        try {
+            const url = isEdit ? `/api/prescription/${rxId}` : `/api/patient/${currentPatientId}/prescription`;
+            const method = isEdit ? 'PUT' : 'POST';
+            const response = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                closeRxModal();
+                selectPatient(currentPatientId, recordsData.patient.name);
+                showToast(isEdit ? 'Prescription updated!' : 'Prescription added!');
+            } else {
+                showToast('Error saving prescription', 'error');
+            }
+        } catch (e) {
+            showToast('Error saving prescription', 'error');
+        }
+    });
+
+    document.getElementById('labForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const labId = document.getElementById('labId').value;
+        const isEdit = !!labId;
+
+        const data = {
+            test_type: document.getElementById('labTestType').value,
+            test_code: document.getElementById('labTestCode').value,
+            priority: document.getElementById('labPriority').value,
+            notes: document.getElementById('labNotes').value
+        };
+
+        try {
+            const url = isEdit ? `/api/lab-results/${labId}` : `/api/patient/${currentPatientId}/lab-results`;
+            const method = isEdit ? 'PUT' : 'POST';
+            const response = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                closeLabModal();
+                selectPatient(currentPatientId, recordsData.patient.name);
+                showToast(isEdit ? 'Lab result updated!' : 'Lab ordered!');
+            } else {
+                showToast('Error saving lab', 'error');
+            }
+        } catch (e) {
+            showToast('Error saving lab', 'error');
+        }
+    });
+
+    // Utility functions
     function formatDate(dateStr) {
         if (!dateStr) return 'N/A';
         const date = new Date(dateStr + 'T00:00:00');
@@ -300,5 +819,31 @@
         if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
         return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
     }
+
+    function showToast(msg, type = 'success') {
+        const colors = {
+            success: 'bg-green-500',
+            error: 'bg-red-500',
+            info: 'bg-blue-500'
+        };
+        const toast = document.createElement('div');
+        toast.className = `fixed bottom-5 right-5 ${colors[type]} text-white px-5 py-4 rounded-lg shadow-xl z-50 flex items-center gap-3 transform translate-x-full transition-transform duration-300`;
+        toast.innerHTML = `<span class="font-medium">${msg}</span>`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.classList.remove('translate-x-full'), 10);
+        setTimeout(() => {
+            toast.classList.add('translate-x-full');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    // Close modals on outside click
+    ['noteModal', 'rxModal', 'labModal', 'deleteModal'].forEach(id => {
+        document.getElementById(id).addEventListener('click', function (e) {
+            if (e.target === this) {
+                this.classList.add('hidden');
+            }
+        });
+    });
 </script>
 {% endblock %}
